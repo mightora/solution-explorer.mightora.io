@@ -1,0 +1,17 @@
+/* Synthetic, non-customer demonstration metadata. */
+(function(root){
+ const variants={
+  1:{version:'1.0.0.0',entities:[['mt_project',[['mt_name','nvarchar'],['mt_status','picklist'],['mt_budget','money']]],['mt_task',[['mt_title','nvarchar'],['mt_project','lookup'],['mt_due','datetime']]]],flowActions:2,relationships:1},
+  2:{version:'1.1.0.0',entities:[['mt_project',[['mt_name','nvarchar'],['mt_status','picklist'],['mt_budget','decimal'],['mt_owner','lookup']]],['mt_task',[['mt_title','nvarchar'],['mt_project','lookup'],['mt_due','datetime']]],['mt_milestone',[['mt_title','nvarchar'],['mt_targetdate','datetime']]]],flowActions:3,relationships:2}
+ };
+ function demo(version){const d=variants[version];
+ const entities=d.entities.map(([name,columns])=>`<Entity><Name>${name}</Name><EntityInfo><entity><LogicalName>${name}</LogicalName><DisplayName>${name}</DisplayName></entity></EntityInfo><attributes>${columns.map(([c,t])=>`<attribute PhysicalName="${c}"><Type>${t}</Type><DisplayName>${c}</DisplayName></attribute>`).join('')}</attributes></Entity>`).join('');
+ const relationships=`<EntityRelationship Name="mt_project_tasks"><ReferencingEntityName>mt_task</ReferencingEntityName><ReferencedEntityName>mt_project</ReferencedEntityName><EntityRelationshipType>OneToMany</EntityRelationshipType></EntityRelationship>${version===2?'<EntityRelationship Name="mt_project_milestones"><ReferencingEntityName>mt_milestone</ReferencingEntityName><ReferencedEntityName>mt_project</ReferencedEntityName><EntityRelationshipType>OneToMany</EntityRelationshipType></EntityRelationship>':''}`;
+ const wf='<Workflow WorkflowId="00000000-0000-4000-8000-000000000001" Name="Project approved notification"><Category>5</Category><StateCode>1</StateCode></Workflow>';
+ const xml=`<?xml version="1.0" encoding="utf-8"?><ImportExportXml><Entities>${entities}</Entities><EntityRelationships>${relationships}</EntityRelationships><Workflows>${wf}</Workflows><WebResources><WebResource><Name>mt_project.js</Name><WebResourceType>3</WebResourceType></WebResource></WebResources><environmentvariabledefinitions><environmentvariabledefinition><schemaname>mt_NotifyEndpoint</schemaname><type>100000000</type></environmentvariabledefinition></environmentvariabledefinitions><connectionreferences><connectionreference><connectionreferencelogicalname>mt_sharedoffice365</connectionreferencelogicalname><connectorid>/providers/Microsoft.PowerApps/apis/shared_office365</connectorid></connectionreference></connectionreferences></ImportExportXml>`;
+ const flow={name:'Project approved notification',properties:{displayName:'Project approved notification',connectionReferences:{shared_office365:{connectionReferenceLogicalName:'mt_sharedoffice365'}},definition:{triggers:{On_project_update:{}},actions:Object.fromEntries(Array.from({length:d.flowActions},(_,i)=>['action_'+(i+1),{}]))}}};
+ const files=new Map([['solution.xml',`<ImportExportXml><SolutionManifest><UniqueName>mt_projectmanagement</UniqueName><Version>${d.version}</Version><Managed>0</Managed><Publisher><UniqueName>mightora_demo</UniqueName></Publisher></SolutionManifest></ImportExportXml>`],['customizations.xml',xml],['Workflows/ProjectApproved.json',JSON.stringify(flow)]]);
+ const result=root.SolutionCore.parseSolution(files);return {...result,info:{...result.info,filename:`sample-project-${version}.zip`},sample:true};
+ }
+ root.SolutionSamples={demo};
+})(globalThis);

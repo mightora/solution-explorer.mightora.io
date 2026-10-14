@@ -1,0 +1,28 @@
+name: CI · test and offline build
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Retrieve official Mightora logo for offline edition
+        run: |
+          mkdir -p assets
+          curl --fail --location --silent --show-error --retry 3 --max-time 20 \
+            https://raw.githubusercontent.com/mightora/mightora.io/main/static/images/mightoraIoLogo4-200x900.png \
+            --output assets/mightora-logo.png
+          test -s assets/mightora-logo.png
+      - run: npm run check
+      - uses: actions/upload-artifact@v4
+        with:
+          name: solution-explorer-website-and-offline
+          path: dist/

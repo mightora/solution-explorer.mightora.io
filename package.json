@@ -1,0 +1,10 @@
+{
+  "name":"@mightora/solution-explorer",
+  "version":"0.1.0",
+  "private":true,
+  "description":"Local-first Dataverse solution ZIP explorer, architecture visualiser and component comparer",
+  "type":"module",
+  "scripts":{"build":"node scripts/build.mjs","test":"node --test tests/parser.test.mjs","check":"npm run test && npm run build && node --test tests/build.test.mjs"},
+  "license":"MIT",
+  "engines":{"node":">=20"}
+}
