@@ -1,17 +1,52 @@
-/* Synthetic, non-customer demonstration metadata. */
+/* Mightora-authored fictional demonstration packages; NOT valid for Dataverse import. */
 (function(root){
- const variants={
-  1:{version:'1.0.0.0',entities:[['mt_project',[['mt_name','nvarchar'],['mt_status','picklist'],['mt_budget','money']]],['mt_task',[['mt_title','nvarchar'],['mt_project','lookup'],['mt_due','datetime']]]],flowActions:2,relationships:1},
-  2:{version:'1.1.0.0',entities:[['mt_project',[['mt_name','nvarchar'],['mt_status','picklist'],['mt_budget','decimal'],['mt_owner','lookup']]],['mt_task',[['mt_title','nvarchar'],['mt_project','lookup'],['mt_due','datetime']]],['mt_milestone',[['mt_title','nvarchar'],['mt_targetdate','datetime']]]],flowActions:3,relationships:2}
+ 'use strict';
+ const projects={
+  id:'project-v1',title:'Project tracker · v1.0',sector:'Project delivery',version:'1.0.0.0',uniqueName:'mt_projectmanagement',
+  publisher:'mightora_demo',managed:false,description:'Baseline: projects, tasks, approval notification, connection reference and environment variable.',
+  entities:[['mt_project',[['mt_name','nvarchar'],['mt_status','picklist'],['mt_budget','money']]],['mt_task',[['mt_title','nvarchar'],['mt_project','lookup'],['mt_due','datetime']]]],
+  relationships:[['mt_project_tasks','mt_task','mt_project']],flows:[['Project approved notification',2,'mt_sharedoffice365']],
+  connections:[['mt_sharedoffice365','/providers/Microsoft.PowerApps/apis/shared_office365']],environments:['mt_NotifyEndpoint'],resources:['mt_project.js']
  };
- function demo(version){const d=variants[version];
- const entities=d.entities.map(([name,columns])=>`<Entity><Name>${name}</Name><EntityInfo><entity><LogicalName>${name}</LogicalName><DisplayName>${name}</DisplayName></entity></EntityInfo><attributes>${columns.map(([c,t])=>`<attribute PhysicalName="${c}"><Type>${t}</Type><DisplayName>${c}</DisplayName></attribute>`).join('')}</attributes></Entity>`).join('');
- const relationships=`<EntityRelationship Name="mt_project_tasks"><ReferencingEntityName>mt_task</ReferencingEntityName><ReferencedEntityName>mt_project</ReferencedEntityName><EntityRelationshipType>OneToMany</EntityRelationshipType></EntityRelationship>${version===2?'<EntityRelationship Name="mt_project_milestones"><ReferencingEntityName>mt_milestone</ReferencingEntityName><ReferencedEntityName>mt_project</ReferencedEntityName><EntityRelationshipType>OneToMany</EntityRelationshipType></EntityRelationship>':''}`;
- const wf='<Workflow WorkflowId="00000000-0000-4000-8000-000000000001" Name="Project approved notification"><Category>5</Category><StateCode>1</StateCode></Workflow>';
- const xml=`<?xml version="1.0" encoding="utf-8"?><ImportExportXml><Entities>${entities}</Entities><EntityRelationships>${relationships}</EntityRelationships><Workflows>${wf}</Workflows><WebResources><WebResource><Name>mt_project.js</Name><WebResourceType>3</WebResourceType></WebResource></WebResources><environmentvariabledefinitions><environmentvariabledefinition><schemaname>mt_NotifyEndpoint</schemaname><type>100000000</type></environmentvariabledefinition></environmentvariabledefinitions><connectionreferences><connectionreference><connectionreferencelogicalname>mt_sharedoffice365</connectionreferencelogicalname><connectorid>/providers/Microsoft.PowerApps/apis/shared_office365</connectorid></connectionreference></connectionreferences></ImportExportXml>`;
- const flow={name:'Project approved notification',properties:{displayName:'Project approved notification',connectionReferences:{shared_office365:{connectionReferenceLogicalName:'mt_sharedoffice365'}},definition:{triggers:{On_project_update:{}},actions:Object.fromEntries(Array.from({length:d.flowActions},(_,i)=>['action_'+(i+1),{}]))}}};
- const files=new Map([['solution.xml',`<ImportExportXml><SolutionManifest><UniqueName>mt_projectmanagement</UniqueName><Version>${d.version}</Version><Managed>0</Managed><Publisher><UniqueName>mightora_demo</UniqueName></Publisher></SolutionManifest></ImportExportXml>`],['customizations.xml',xml],['Workflows/ProjectApproved.json',JSON.stringify(flow)]]);
- const result=root.SolutionCore.parseSolution(files);return {...result,info:{...result.info,filename:`sample-project-${version}.zip`},sample:true};
+ const projectV2={...projects,id:'project-v2',title:'Project tracker · v1.1',version:'1.1.0.0',description:'Updated release: adds milestones and an owner, changes budget type and extends approval flow.',
+  entities:[['mt_project',[['mt_name','nvarchar'],['mt_status','picklist'],['mt_budget','decimal'],['mt_owner','lookup']]],['mt_task',[['mt_title','nvarchar'],['mt_project','lookup'],['mt_due','datetime']]],['mt_milestone',[['mt_title','nvarchar'],['mt_targetdate','datetime']]]],
+  relationships:[['mt_project_tasks','mt_task','mt_project'],['mt_project_milestones','mt_milestone','mt_project']],flows:[['Project approved notification',3,'mt_sharedoffice365']]
+ };
+ const support={id:'service-desk',title:'Service desk · managed demo',sector:'IT services',version:'2.0.0.0',uniqueName:'mt_servicedesk',publisher:'mightora_demo',managed:true,
+  description:'Managed metadata example: tickets, teams, SLAs and triage automation. Demonstrates the recovery assessment.',
+  entities:[['mt_ticket',[['mt_subject','nvarchar'],['mt_priority','picklist'],['mt_state','picklist'],['mt_assignedteam','lookup']]],['mt_team',[['mt_name','nvarchar'],['mt_lead','lookup']]],['mt_sla',[['mt_name','nvarchar'],['mt_deadlinehours','int']]]],
+  relationships:[['mt_team_tickets','mt_ticket','mt_team'],['mt_sla_tickets','mt_ticket','mt_sla']],
+  flows:[['Ticket escalation',4,'mt_sharedteams'],['Ticket acknowledgement',2,'mt_sharedoffice365']],
+  connections:[['mt_sharedteams','/providers/Microsoft.PowerApps/apis/shared_teams'],['mt_sharedoffice365','/providers/Microsoft.PowerApps/apis/shared_office365']],environments:['mt_HelpdeskEmail'],resources:['mt_ticket.js']};
+ const grants={id:'grants',title:'Grant applications',sector:'Public services',version:'1.0.0.0',uniqueName:'mt_grantapplications',publisher:'mightora_demo',managed:false,
+  description:'Application, organisation and assessment records with eligibility and decision workflows.',
+  entities:[['mt_application',[['mt_reference','nvarchar'],['mt_submittedon','datetime'],['mt_amount','money'],['mt_organisation','lookup']]],['mt_organisation',[['mt_name','nvarchar'],['mt_registerednumber','nvarchar']]],['mt_assessment',[['mt_score','decimal'],['mt_application','lookup'],['mt_decision','picklist']]]],
+  relationships:[['mt_application_organisation','mt_application','mt_organisation'],['mt_assessment_application','mt_assessment','mt_application']],
+  flows:[['Application receipt',2,'mt_sharedoffice365'],['Review routing',4,'mt_sharedoffice365']],connections:[['mt_sharedoffice365','/providers/Microsoft.PowerApps/apis/shared_office365']],environments:['mt_NotificationTemplate'],resources:['mt_application.js']};
+ const volunteers={id:'volunteers',title:'Volunteer events',sector:'Community',version:'1.0.0.0',uniqueName:'mt_volunteerhub',publisher:'mightora_demo',managed:false,
+  description:'Volunteer profiles, community events and registration flow — a different relationship model.',
+  entities:[['mt_volunteer',[['mt_name','nvarchar'],['mt_email','nvarchar'],['mt_skills','nvarchar']]],['mt_event',[['mt_title','nvarchar'],['mt_eventdate','datetime'],['mt_location','nvarchar']]],['mt_signup',[['mt_volunteer','lookup'],['mt_event','lookup'],['mt_attended','boolean']]]],
+  relationships:[['mt_signup_volunteer','mt_signup','mt_volunteer'],['mt_signup_event','mt_signup','mt_event']],
+  flows:[['Sign-up confirmation',3,'mt_sharedoffice365']],connections:[['mt_sharedoffice365','/providers/Microsoft.PowerApps/apis/shared_office365']],environments:['mt_CommunityContact'],resources:['mt_signup.js']};
+ const items=[projects,projectV2,support,grants,volunteers];
+ const escape=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+ function get(id){const found=items.find(x=>x.id===id);if(!found)throw Error('Unknown sample package: '+id);return found;}
+ function files(id){const d=get(id);
+  const entities=d.entities.map(([name,columns])=>`<Entity><Name>${escape(name)}</Name><EntityInfo><entity><LogicalName>${escape(name)}</LogicalName><DisplayName>${escape(name)}</DisplayName></entity></EntityInfo><attributes>${columns.map(([column,type])=>`<attribute PhysicalName="${escape(column)}"><Type>${escape(type)}</Type><DisplayName>${escape(column)}</DisplayName></attribute>`).join('')}</attributes></Entity>`).join('');
+  const relationships=d.relationships.map(([name,source,target])=>`<EntityRelationship Name="${escape(name)}"><ReferencingEntityName>${escape(source)}</ReferencingEntityName><ReferencedEntityName>${escape(target)}</ReferencedEntityName><EntityRelationshipType>OneToMany</EntityRelationshipType></EntityRelationship>`).join('');
+  const flows=d.flows.map(([name],i)=>`<Workflow WorkflowId="00000000-0000-4000-8000-${String(i+1).padStart(12,'0')}" Name="${escape(name)}"><Category>5</Category><StateCode>1</StateCode></Workflow>`).join('');
+  const connectionXml=d.connections.map(([name,connector])=>`<connectionreference><connectionreferencelogicalname>${escape(name)}</connectionreferencelogicalname><connectorid>${escape(connector)}</connectorid></connectionreference>`).join('');
+  const environmentXml=d.environments.map(name=>`<environmentvariabledefinition><schemaname>${escape(name)}</schemaname><type>100000000</type></environmentvariabledefinition>`).join('');
+  const webXml=d.resources.map(name=>`<WebResource><Name>${escape(name)}</Name><WebResourceType>3</WebResourceType></WebResource>`).join('');
+  const manifest=`<?xml version="1.0" encoding="utf-8"?><ImportExportXml><SolutionManifest><UniqueName>${escape(d.uniqueName)}</UniqueName><Version>${d.version}</Version><Managed>${d.managed?'1':'0'}</Managed><Publisher><UniqueName>${escape(d.publisher)}</UniqueName></Publisher></SolutionManifest></ImportExportXml>`;
+  const custom=`<?xml version="1.0" encoding="utf-8"?><ImportExportXml><Entities>${entities}</Entities><EntityRelationships>${relationships}</EntityRelationships><Workflows>${flows}</Workflows><WebResources>${webXml}</WebResources><environmentvariabledefinitions>${environmentXml}</environmentvariabledefinitions><connectionreferences>${connectionXml}</connectionreferences></ImportExportXml>`;
+  const result=new Map([['solution.xml',manifest],['customizations.xml',custom]]);
+  for(const [name,actionCount,reference] of d.flows){const flow={name,properties:{displayName:name,connectionReferences:{service:{connectionReferenceLogicalName:reference}},definition:{triggers:{On_dataverse_update:{}},actions:Object.fromEntries(Array.from({length:actionCount},(_,i)=>['Step_'+(i+1),{type:'Compose',inputs:{step:i+1}}]))}}};result.set(`Workflows/${name.replace(/[^a-z0-9]+/gi,'')}.json`,JSON.stringify(flow));}
+  // Non-executable demonstration metadata. No real endpoints, credentials or customer data.
+  result.set('DEMO-NOT-FOR-IMPORT.txt','FICTIONAL TEACHING PACKAGE ONLY. Not a valid or complete Dataverse import solution. Generated by Mightora Solution Explorer.');
+  return result;
  }
- root.SolutionSamples={demo};
+ function load(id){const d=get(id);const m=root.SolutionCore.parseSolution(files(id));return {...m,info:{...m.info,filename:`${id}-demo.zip`},sample:true};}
+ function demo(version){return load(version===2?'project-v2':'project-v1');}
+ root.SolutionSamples={catalog:items.map(({id,title,sector,description,managed,version})=>({id,title,sector,description,managed,version})),files,load,demo};
 })(globalThis);

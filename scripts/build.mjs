@@ -1,4 +1,4 @@
-import fs from 'node:fs';import path from 'node:path';import {createRequire} from 'node:module';import {fileURLToPath} from 'node:url';
+import fs from 'node:fs';import path from 'node:path';import vm from 'node:vm';import {createRequire} from 'node:module';import {fileURLToPath} from 'node:url';
 const require=createRequire(import.meta.url);const JSZip=require('../vendor/jszip.cjs');
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');const dist=path.join(root,'dist');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
@@ -6,6 +6,16 @@ const write=(p,s)=>{const dest=path.join(dist,p);fs.mkdirSync(path.dirname(dest)
 const copy=p=>{const dest=path.join(dist,p);fs.mkdirSync(path.dirname(dest),{recursive:true});fs.copyFileSync(path.join(root,p),dest);};
 fs.rmSync(dist,{recursive:true,force:true});fs.mkdirSync(dist,{recursive:true});
 for(const p of ['index.html','src/styles.css','src/parser.js','src/samples.js','src/diagrams.js','src/app.js','vendor/jszip.min.js','LICENSE'])copy(p);
+// Produce downloadable teaching ZIPs from the exact same sample definitions used in the browser.
+const sampleScope={};sampleScope.globalThis=sampleScope;
+vm.runInNewContext(read('src/samples.js'),sampleScope,{filename:'src/samples.js'});
+for(const sample of sampleScope.SolutionSamples.catalog){
+ const packageZip=new JSZip();
+ for(const [name,contents] of sampleScope.SolutionSamples.files(sample.id))packageZip.file(name,contents);
+ const bytes=await packageZip.generateAsync({type:'nodebuffer',compression:'DEFLATE',compressionOptions:{level:6}});
+ write(`examples/${sample.id}-demo.zip`,bytes);
+}
+write('examples/README.txt','Mightora Solution Explorer - fictional teaching ZIPs\nThese files mimic metadata structures for trying the explorer. They are NOT Dataverse import packages, nor Microsoft-certified exports.\n');
 let page=read('index.html');
 const styles=read('src/styles.css');const scriptPaths=['vendor/jszip.min.js','src/parser.js','src/samples.js','src/diagrams.js','src/app.js'];
 const js=scriptPaths.map(p=>read(p).replaceAll('</script','<\\/script')).join('\n;\n');

@@ -20,3 +20,18 @@ test('Pages output includes CNAME, crawler files and vendor JS',()=>{
  for(const filename of ['index.html','CNAME','robots.txt','sitemap.xml','vendor/jszip.min.js','src/app.js'])assert.ok(fs.existsSync(path.join(dir,filename)));
  assert.equal(fs.readFileSync(path.join(dir,'CNAME'),'utf8').trim(),'solution-explorer.mightora.io');
 });
+
+test('all teaching ZIPs are generated from shared definitions',async()=>{
+ for(const id of ['project-v1','project-v2','service-desk','grants','volunteers']){
+  const zip=await JSZip.loadAsync(fs.readFileSync(path.join(dir,`examples/${id}-demo.zip`)));
+  assert.ok(zip.file('solution.xml'));assert.ok(zip.file('customizations.xml'));
+  assert.match(await zip.file('DEMO-NOT-FOR-IMPORT.txt').async('string'),/not/i);
+ }
+});
+test('online and offline UIs include sample gallery and recovery guidance',()=>{
+ const online=fs.readFileSync(path.join(dir,'index.html'),'utf8');
+ const offline=fs.readFileSync(path.join(dir,'downloads/solution-explorer-offline.html'),'utf8');
+ for(const content of [online,offline]){
+  for(const id of ['samples-gallery','comparison-context','download-recovery','export-diff-csv'])assert.ok(content.includes(id));
+ }
+});

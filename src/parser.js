@@ -108,7 +108,7 @@
     if(paths.some(p=>/\.ya?ml$/i.test(p)))warnings.push('YAML source-control files detected. This release supports exported XML solutions; YAML component metadata is not fully interpreted.');
     const m=manifest ? parseXml(manifest[1],manifest[0],warnings):null;
     const meta=m ? (descendants(m,'SolutionManifest')[0]||m):null;
-    const info={name:meta?deep(meta,'UniqueName'):'',version:meta?deep(meta,'Version'):'',managed:meta?deep(meta,'Managed')==='1':false,publisher:meta?deep(meta,'PublisherUniqueName')||deep(descendants(meta,'Publisher')[0]||meta,'UniqueName'):'',fileCount:paths.length};
+    const info={name:meta?deep(meta,'UniqueName'):'',version:meta?deep(meta,'Version'):'',managed:meta?['1','true'].includes(deep(meta,'Managed').toLowerCase()):null,publisher:meta?deep(meta,'PublisherUniqueName')||deep(descendants(meta,'Publisher')[0]||meta,'UniqueName'):'',fileCount:paths.length};
     const xmlPaths=new Set();
     if(customs){const d=parseXml(customs[1],customs[0],warnings);if(d){processEntities(d,map);workflowRecords(d,map);otherRecords(d,map);}xmlPaths.add(customs[0]);}
     for(const [path,content] of files){
@@ -142,6 +142,10 @@
     const counts=Object.fromEntries(TYPES.map(k=>[k,components.filter(x=>x.type===k).length]));
     return {info,components,counts,warnings};
   }
+  function propertyChanges(before,after){
+    const a=before||{},b=after||{};
+    return [...new Set([...Object.keys(a),...Object.keys(b)])].sort().filter(k=>a[k]!==b[k]).map(key=>({key,before:Object.hasOwn(a,key)?a[key]:null,after:Object.hasOwn(b,key)?b[key]:null}));
+  }
   function stableProperties(obj){return JSON.stringify(Object.keys(obj||{}).sort().map(k=>[k,obj[k]]));}
   function compare(a,b){
     if(!a||!b)return [];
@@ -150,5 +154,17 @@
     for(const [id,c] of old)if(!now.has(id))result.push({...c,status:'removed',before:c.properties});
     return result.sort((x,y)=>({removed:0,added:1,changed:2,unchanged:3})[x.status]-({removed:0,added:1,changed:2,unchanged:3})[y.status]||x.name.localeCompare(y.name));
   }
-  root.SolutionCore={parseSolution,compare,TYPES,LABELS};
+  function assessManaged(m){
+    if(!m)return {status:'none',title:'Load a solution to assess its type',steps:[]};
+    if(m.info.managed===null)return {status:'unknown',title:'Solution type could not be confirmed',steps:['Find solution.xml in the original export and confirm its managed state.','Do not assume an incomplete archive is unmanaged.']};
+    if(!m.info.managed)return {status:'unmanaged',title:'Unmanaged solution detected',steps:['Keep this unmanaged export and its source-controlled project as your editable development source.','Use Power Apps or PAC CLI to export another unmanaged copy when required.']};
+    return {status:'managed',title:'Managed solution — direct conversion is not supported',steps:[
+      'Request the original unmanaged solution ZIP or solution source-control project from its publisher or development team.',
+      'If you own the development environment, export the original unmanaged solution using Power Apps or PAC CLI.',
+      'Use the explorer inventory to document component names, dependencies and missing source artefacts.',
+      'If the original source is unavailable, rebuild an editable solution with appropriate permission and ownership in a development environment; this is manual reconstruction, not conversion.',
+      'Validate reconstructed components, licences, dependencies and ALM pipelines before deployment.'
+    ]};
+  }
+  root.SolutionCore={parseSolution,compare,propertyChanges,assessManaged,TYPES,LABELS};
 })(globalThis);

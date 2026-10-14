@@ -44,3 +44,27 @@ test('web-resource package checksum can detect modified binary assets without ex
  assert.equal(first.counts.webresource,1);
  assert.equal(SolutionCore.compare(first,next).find(c=>c.type==='webresource')?.status,'changed');
 });
+
+test('five fictional ZIP samples include comparison pair and a managed package',()=>{
+ assert.equal(SolutionSamples.catalog.length,5);
+ for(const item of SolutionSamples.catalog){
+  const files=SolutionSamples.files(item.id);const parsed=SolutionCore.parseSolution(files);
+  assert.ok(files.has('DEMO-NOT-FOR-IMPORT.txt'));
+  assert.ok(parsed.components.length>5,`missing components in ${item.id}`);
+  assert.equal(parsed.info.managed,item.managed);
+ }
+ assert.equal(SolutionSamples.load('service-desk').info.managed,true);
+});
+test('recovery assessment does not falsely offer conversion',()=>{
+ const managed=SolutionCore.assessManaged(SolutionSamples.load('service-desk'));
+ assert.equal(managed.status,'managed');
+ assert.match(managed.title,/not supported/i);
+ assert.ok(managed.steps.some(s=>s.includes('original unmanaged')));
+ assert.equal(SolutionCore.assessManaged(SolutionSamples.demo(1)).status,'unmanaged');
+});
+test('field-level delta contains old and new values',()=>{
+ const v1=SolutionSamples.demo(1),v2=SolutionSamples.demo(2);
+ const c=SolutionCore.compare(v1,v2).find(c=>c.id==='column:mt_project.mt_budget');
+ const changes=SolutionCore.propertyChanges(c.before,c.properties);
+ assert.ok(changes.some(d=>d.key==='dataType'&&d.before==='money'&&d.after==='decimal'));
+});
