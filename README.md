@@ -72,3 +72,7 @@ The online page uses required Mightora shared web components. The downloaded HTM
 ## Licence and attribution
 
 MIT — [LICENSE](LICENSE). JSZip is MIT-licensed (Stuk.github.io/jszip), with its licence included under `vendor/JSZIP-LICENSE.md`. A vendored test-only XML DOM parser also retains its upstream MIT licence under `tests/support/xmldom/LICENSE`.
+
+## Shared footer, author and evidence badges
+
+The online site uses the official `mightora-author` and `mightora-footer` components, with shared stylesheet and live YAML footer navigation. The author includes the prescribed portrait, biography and links. Directly above the footer are real GitHub Actions status badges for CI, CodeQL and Pages, plus dynamic repository licence and latest-commit badges sourced through Shields.io. The offline edition replaces external status images with non-live evidence links so it works without network requests; it retains a locally styled footer and author section.

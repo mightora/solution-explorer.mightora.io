@@ -35,3 +35,20 @@ test('online and offline UIs include sample gallery and recovery guidance',()=>{
   for(const id of ['samples-gallery','comparison-context','download-recovery','export-diff-csv'])assert.ok(content.includes(id));
  }
 });
+
+test('Mightora footer, author and live badges follow the design system',()=>{
+ const online=fs.readFileSync(path.join(dir,'index.html'),'utf8');
+ const offline=fs.readFileSync(path.join(dir,'downloads/solution-explorer-offline.html'),'utf8');
+ assert.match(online,/<mightora-author>[\s\S]*author-section-overlay[\s\S]*author-photos[\s\S]*author-bio/);
+ assert.match(online,/<mightora-footer>[\s\S]*footer-bottom[\s\S]*footer-copy[\s\S]*footer-bottom-links/);
+ for(const workflow of ['ci.yml','codeql.yml','pages.yml']) assert.ok(online.includes('actions/workflows/'+workflow+'/badge.svg?branch=main'));
+ assert.ok(online.includes('img.shields.io/github/license/'));
+ assert.ok(online.includes('img.shields.io/github/last-commit/'));
+ assert.ok(online.indexOf('class="evidence-bar"')>online.indexOf('</mightora-author>'));
+ assert.ok(online.indexOf('class="evidence-bar"')<online.indexOf('<mightora-footer>'));
+ assert.ok(!offline.includes('actions/workflows/ci.yml/badge.svg'));
+ assert.ok(!offline.includes('img.shields.io/github/license/'));
+ assert.ok(offline.includes('offline-evidence-label'));
+ assert.match(offline,/<div class="footer-main">/);
+ assert.ok(!offline.includes('src="https://techtweedie.github.io/images/author/'));
+});

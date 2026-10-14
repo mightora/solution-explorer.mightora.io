@@ -21,6 +21,17 @@ jobs:
             https://raw.githubusercontent.com/mightora/mightora.io/main/static/images/mightoraIoLogo4-200x900.png \
             --output assets/mightora-logo.png
           test -s assets/mightora-logo.png
+      - name: Retrieve author artwork for offline edition (optional)
+        run: |
+          curl --fail --location --silent --show-error --retry 2 --max-time 25 \
+            https://techtweedie.github.io/images/author/ian-tweedie-sq2_hu_a380911c6f4726de.png \
+            --output assets/author-avatar.png || rm -f assets/author-avatar.png
+          curl --fail --location --silent --show-error --retry 2 --max-time 25 \
+            https://raw.githubusercontent.com/TechTweedie/techtweedie.github.io/v2/assets/images/site/main-logo.png \
+            --output assets/author-blog-logo.png || rm -f assets/author-blog-logo.png
+          curl --fail --location --silent --show-error --retry 2 --max-time 25 \
+            https://cdn.jsdelivr.net/gh/mightora/shared-ui@main/ian-tweedie-presenting-4.png \
+            --output assets/author-background.png || rm -f assets/author-background.png
       - run: npm run check
       - uses: actions/upload-artifact@v4
         with:
