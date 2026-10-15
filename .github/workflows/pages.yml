@@ -39,6 +39,14 @@ jobs:
           curl --fail --location --silent --show-error --retry 2 --max-time 25 \
             https://cdn.jsdelivr.net/gh/mightora/shared-ui@main/ian-tweedie-presenting-4.png \
             --output assets/author-background.png || rm -f assets/author-background.png
+      - name: Retrieve footer brand artwork (optional)
+        run: |
+          curl --fail --location --silent --show-error --retry 2 --max-time 20 \
+            https://raw.githubusercontent.com/mightora/mightora.io/main/static/images/TechTweedie_bw.png \
+            --output assets/footer-techtweedie.png || rm -f assets/footer-techtweedie.png
+          curl --fail --location --silent --show-error --retry 2 --max-time 20 \
+            https://raw.githubusercontent.com/mightora/mightora.io/main/static/images/tweedTechnologyLogoLight.png \
+            --output assets/footer-tweed.png || rm -f assets/footer-tweed.png
       - run: npm run check
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

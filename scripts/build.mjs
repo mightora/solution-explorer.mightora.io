@@ -11,6 +11,8 @@ const sourcePage=read('index.html');
 const scriptPaths=[...sourcePage.matchAll(/<script\s+src="((?:vendor|src)\/[A-Za-z0-9_./-]+\.js)"\s+defer><\/script>/g)].map(match=>match[1]);
 if(!scriptPaths.includes('src/app.js')||!scriptPaths.includes('src/component-catalog.js')||!scriptPaths.includes('src/object-explorer.js')||!scriptPaths.includes('src/object-ui.js'))throw new Error('Offline build is missing a required application module.');
 for(const p of ['index.html','src/styles.css',...scriptPaths,'LICENSE'])copy(p);
+// Serve shared footer logo artwork from the same GitHub Pages origin when available.
+for(const asset of ['assets/mightora-logo.png','assets/footer-techtweedie.png','assets/footer-tweed.png']) if(fs.existsSync(path.join(root,asset)))copy(asset);
 // Produce downloadable teaching ZIPs from the exact same sample definitions used in the browser.
 const sampleScope={};sampleScope.globalThis=sampleScope;
 vm.runInNewContext(read('src/samples.js'),sampleScope,{filename:'src/samples.js'});

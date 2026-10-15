@@ -141,3 +141,14 @@ test('model-driven form preview and reporting are present in online and offline 
  assert.ok(offline.includes('Form layout changes'));
  assert.ok(!offline.includes('footer-logo-fallback.js'));
 });
+
+test('deployed footer image assets are included when fetched, and browser fallback is bundled',()=>{
+ const offline=fs.readFileSync(path.join(dir,'downloads/solution-explorer-offline.html'),'utf8');
+ assert.ok(offline.includes('repairAttempt'));
+ assert.ok(offline.includes('assets/footer-techtweedie.png'));
+ assert.ok(offline.includes('footer-logo-fallback'));
+ for(const file of ['footer-techtweedie.png','footer-tweed.png']){
+  const asset=path.resolve(import.meta.dirname,'../assets',file);
+  if(fs.existsSync(asset))assert.ok(fs.existsSync(path.join(dir,'assets',file)));
+ }
+});
