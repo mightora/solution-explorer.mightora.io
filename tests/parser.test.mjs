@@ -46,7 +46,7 @@ test('web-resource package checksum can detect modified binary assets without ex
 });
 
 test('five fictional ZIP samples include comparison pair and a managed package',()=>{
- assert.equal(SolutionSamples.catalog.length,5);
+ assert.equal(SolutionSamples.catalog.length,6);
  for(const item of SolutionSamples.catalog){
   const files=SolutionSamples.files(item.id);const parsed=SolutionCore.parseSolution(files);
   assert.ok(files.has('DEMO-NOT-FOR-IMPORT.txt'));
@@ -54,6 +54,9 @@ test('five fictional ZIP samples include comparison pair and a managed package',
   assert.equal(parsed.info.managed,item.managed);
  }
  assert.equal(SolutionSamples.load('service-desk').info.managed,true);
+ const showcase=SolutionSamples.load('architecture-tour');
+ for(const type of ['pluginassembly','pluginstep','role','privilege','customapi','pcf','bpf','powerpages','copilot','topic','ai'])assert.ok(showcase.counts[type]>0,type);
+ assert.ok(showcase.dependencies.length>0);
 });
 test('recovery assessment does not falsely offer conversion',()=>{
  const managed=SolutionCore.assessManaged(SolutionSamples.load('service-desk'));

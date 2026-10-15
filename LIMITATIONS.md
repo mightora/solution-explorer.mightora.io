@@ -17,7 +17,7 @@ This first release parses **XML-based Dataverse exported solution ZIPs**. Micros
 Exports from different Dataverse versions can have different structures. Please open a minimal anonymised test case as a GitHub issue when support is missing.
 
 ## Sample packages
-The five built-in ZIP examples are fictional exercises using export-like XML structures. They are not genuine Dataverse exports, do not contain complete dependency metadata, and cannot be imported. The offline application generates the same sample ZIPs entirely in the browser.
+The six built-in ZIP examples are fictional exercises using export-like XML structures. They are not genuine Dataverse exports, do not contain complete dependency metadata, and cannot be imported. The offline application generates the same sample ZIPs entirely in the browser.
 
 ## Managed solution conversion
 Dataverse does not support simply converting managed packages to unmanaged by changing ZIP flags or repacking them. The recovery checklist is an assessment, not a converter or a means of bypassing managed properties. Obtain the original unmanaged source or rebuild components with appropriate rights and tests.

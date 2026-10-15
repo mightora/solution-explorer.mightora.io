@@ -22,7 +22,7 @@ test('Pages output includes CNAME, crawler files and vendor JS',()=>{
 });
 
 test('all teaching ZIPs are generated from shared definitions',async()=>{
- for(const id of ['project-v1','project-v2','service-desk','grants','volunteers']){
+ for(const id of ['project-v1','project-v2','service-desk','grants','volunteers','architecture-tour']){
   const zip=await JSZip.loadAsync(fs.readFileSync(path.join(dir,`examples/${id}-demo.zip`)));
   assert.ok(zip.file('solution.xml'));assert.ok(zip.file('customizations.xml'));
   assert.match(await zip.file('DEMO-NOT-FOR-IMPORT.txt').async('string'),/not/i);

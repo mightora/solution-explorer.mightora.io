@@ -85,3 +85,5 @@ The online site uses the official `mightora-author` and `mightora-footer` compon
 ## Power Automate Flow Explorer
 
 Upload a Dataverse solution ZIP to see the flow definitions in its `Workflows/*.json` files, or open a standalone exported flow JSON. The Flow Explorer maps triggers, actions, conditions, loops, scopes, switch cases, branch nesting, and explicit `runAfter` dependencies. Click nodes to inspect allowlisted metadata, then download SVG, Mermaid, or sanitized JSON. A branching demo is included. Everything runs in the browser and the same feature works offline. Sensitive parameter values, literal expressions, access tokens, and connection credentials are intentionally not retained or exported. Diagram traversal is capped at 250 steps and display at 140.
+
+The **Component showcase · full architecture** package is a fictional test case covering plug-ins, roles, choices, custom APIs, controls, integrations, Power Pages, Copilot topics, AI and missing dependencies. It is not importable into Dataverse.
