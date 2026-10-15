@@ -25,7 +25,7 @@
  <div class="local-header"><a class="local-logo" href="https://mightora.io" aria-label="Mightora home"><span class="logo-emblem">m</span><span>Mightora</span></a><div class="local-header-name">/ Solution Explorer</div><a href="#workspace">Open workspace ↗</a></div>
 </mightora-header>
 <div id="offline-banner" class="offline-banner" hidden>Offline Edition – No Internet Connection Required</div>
-<nav class="quick-jump-nav" aria-label="Sections"><a href="#workspace">Workspace</a><a href="#inventory">Components</a><a href="#object-browser">Object explorer</a><a href="#form-preview">Form preview</a><a href="#report-builder">Reports</a><a href="#dependencies">Dependencies</a><a href="#architecture">Architecture</a><a href="#flow-explorer">Flow explorer</a><a href="#examples">Sample ZIPs</a><a href="#comparison">Compare</a><a href="#managed">Managed guidance</a><a href="#privacy">Privacy & trust</a><a href="#report-issue">Report an issue ↗</a></nav>
+<nav class="quick-jump-nav" aria-label="Sections"><a href="#workspace">Workspace</a><a href="#inventory">Components</a><a href="#object-browser">Object explorer</a><a href="#form-preview">Form preview</a><a href="#report-builder">Reports</a><a href="#dataverse-install">Dataverse edition</a><a href="#dependencies">Dependencies</a><a href="#architecture">Architecture</a><a href="#flow-explorer">Flow explorer</a><a href="#examples">Sample ZIPs</a><a href="#comparison">Compare</a><a href="#managed">Managed guidance</a><a href="#privacy">Privacy & trust</a><a href="#report-issue">Report an issue ↗</a></nav>
 <main id="main">
  <section class="hero container" aria-labelledby="headline">
   <div class="hero-copy"><div class="eyebrow"><span class="dot"></span> MIGHTORA DEVELOPER TOOLS <span class="divider-dot">/</span> POWER PLATFORM</div>
@@ -124,6 +124,15 @@
    <p><strong>Two solutions:</strong> A/B identities; added, removed and changed components; before/after architecture, data, forms, integrations and flow diagrams; property differences, change-impact prompts and metadata limitations.</p>
    <p><strong>Editability:</strong> Word uses editable text and structural diagram tables. PowerPoint uses editable native text boxes, shapes and connectors. Very large presentations are bounded and report the export limit; diagrams are not screenshots.</p>
   </details>
+ </div>
+</section>
+<section id="dataverse-install" class="section container" aria-labelledby="dataverse-install-title">
+ <div class="section-top"><div><span class="section-kicker">INSTALL INSIDE POWER APPS</span><h2 id="dataverse-install-title">Solution Explorer for model-driven apps</h2><p>Use the current Dataverse sign-in to discover installed solutions, fully inspect exportable unmanaged packages, and explore installed managed solutions through a clearly labelled partial component inventory. All existing diagrams, comparisons and editable Office reports remain available.</p></div></div>
+ <div class="panel" style="padding:24px">
+ <div class="report-actions"><a class="btn btn-primary" href="downloads/solution-explorer-Dataverse.zip" download>Dataverse installation ZIP ↓</a><a class="btn btn-outline" href="dataverse/solution-explorer.html" download>Standalone HTML web resource ↓</a><a class="btn btn-outline" href="dataverse/README.md">Installation instructions ↗</a></div>
+ <p><strong>Quick installation:</strong> In Power Apps, open an unmanaged solution, create a <strong>Webpage (HTML)</strong> web resource and upload the HTML file. Save/publish, then edit your model-driven app, add a <strong>Web resource</strong> page and enable <strong>Show in navigation</strong>. Save/publish the app. Replace the HTML in the same resource to upgrade.</p>
+ <p><strong>Permissions and completeness:</strong> Your signed-in user's Dataverse permissions determine which solutions can be listed or exported. Microsoft doesn't allow exporting installed managed or Default solutions, so these show component references rather than complete unpacked files. The downloaded ZIP contains installation files, <strong>not</strong> an importable Dataverse solution.</p>
+ <p>The embedded edition has no Mightora backend, external scripts, tracking or separate login. It requires a live authenticated Dataverse environment; the separate offline edition continues to work without internet access.</p>
  </div>
 </section>
 <section id="report-issue" class="section container" aria-labelledby="report-title">

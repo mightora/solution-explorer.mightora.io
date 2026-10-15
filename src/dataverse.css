@@ -1,0 +1,26 @@
+/* Compact, responsive Microsoft Dataverse Web resource edition. All existing explorer screens remain. */
+html[data-dataverse="true"]{scroll-behavior:smooth}
+html[data-dataverse="true"] body{background:#f6f8fc;color:#21334f}
+html[data-dataverse="true"] .hero,html[data-dataverse="true"] #examples,
+html[data-dataverse="true"] #privacy,html[data-dataverse="true"] #faq,
+html[data-dataverse="true"] #dataverse-install,html[data-dataverse="true"] mightora-header,
+html[data-dataverse="true"] mightora-author,html[data-dataverse="true"] mightora-footer,
+html[data-dataverse="true"] .evidence-bar,html[data-dataverse="true"] .quick-jump-nav,
+html[data-dataverse="true"] #report-issue,html[data-dataverse="true"] #managed,
+html[data-dataverse="true"] .footer-brands,html[data-dataverse="true"] #offline-banner{display:none!important}
+.dv-topbar{display:flex;align-items:center;justify-content:space-between;gap:1rem;background:#15263c;color:#fff;padding:13px max(18px,calc((100vw - 1260px)/2));min-height:64px;flex-wrap:wrap}
+.dv-topbrand{display:flex;align-items:center;gap:1rem}.dv-brand-img{display:block;width:154px;max-height:40px;object-fit:contain}
+.dv-product{font-size:15px;font-weight:700;border-left:1px solid #708399;padding-left:16px}
+.dv-nav{display:flex;gap:8px;flex-wrap:wrap}.dv-nav a{color:white;border:1px solid #53677d;border-radius:7px;padding:7px 11px;text-decoration:none;font-size:12px}.dv-nav a:hover{background:#2b4763}
+.dv-bottom{padding:18px 28px;background:#15263c;color:#cbd7e2;font-size:12px;display:flex;align-items:center;flex-wrap:wrap;gap:18px}.dv-bottom a{color:#e0edf9}
+.dv-environment{padding-top:24px}.dv-heading{display:flex;justify-content:space-between;gap:22px;align-items:center;margin-bottom:17px}.dv-heading h1{font-size:clamp(23px,3vw,32px);margin:7px 0}.dv-heading p{margin:0;max-width:800px;color:#546881;font-size:14px}
+.dv-connection-pill{background:#e5f4f2;color:#12665c;border-radius:20px;font-size:11px;white-space:nowrap;padding:8px 13px;font-weight:800}
+.dv-picker-grid{display:grid;grid-template-columns:1fr 1.5fr .95fr;gap:13px;padding:21px;align-items:end}
+.dv-picker-grid label{display:grid;gap:7px;font-size:12px;color:#30445b;font-weight:750}
+.dv-picker-grid input,.dv-picker-grid select{width:100%;border:1px solid #ced7e4;border-radius:7px;background:white;color:#1b314a;min-height:42px;padding:9px 11px;font-size:13px}
+.dv-picker-actions{grid-column:1/-1;display:flex;gap:9px;flex-wrap:wrap}
+.dv-status{color:#286b61;font-size:13px;min-height:22px;margin:11px 0}.dv-status.dv-error{color:#ad3e54}.dv-permissions{color:#62728c;font-size:12px;line-height:1.7;max-width:1050px}
+html[data-dataverse="true"] #workspace{padding-top:26px}html[data-dataverse="true"] .section{scroll-margin-top:20px}
+:where(a,button,input,select,textarea,[tabindex]):focus-visible{outline:3px solid #3ecabb!important;outline-offset:2px}
+@media(max-width:950px){.dv-picker-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.dv-picker-actions{grid-column:1/-1}}
+@media(max-width:600px){.dv-picker-grid{grid-template-columns:1fr}.dv-heading{display:block}.dv-connection-pill{display:inline-block;margin-top:12px}.dv-nav{width:100%}.dv-bottom{padding:18px}.dv-topbar{padding:12px 16px}.dv-brand-img{width:125px}.dv-product{font-size:12px}}
