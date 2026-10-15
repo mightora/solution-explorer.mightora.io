@@ -83,7 +83,7 @@ function makeSlide(title,subtitle,content,theme,index){
  rect('Top accent',0,0,13.333,.12,{fill:theme.primary,stroke:theme.primary});
  rect('Slide title',.58,.34,11.9,.64,{text:title,size:23,bold:true,color:theme.ink,fill:theme.background,stroke:theme.background});
  if(subtitle)rect('Slide subtitle',.6,1.08,12.1,.46,{text:subtitle,size:11.5,color:theme.muted,fill:theme.background,stroke:theme.background});
- shapes+=content((type,props)=>type==='shape'?rect(...props):type==='line'?(shapes+=line(id++,...props)):null,theme);
+ content((type,props)=>type==='shape'?rect(...props):type==='line'?(shapes+=line(id++,...props)):null,theme);
  rect('Footer',.55,7.17,11.5,.18,{text:'MIGHTORA  /  SOLUTION EXPLORER   •   Editable PowerPoint report',size:8,color:theme.muted,fill:theme.background,stroke:theme.background});
  rect('Page',12.55,7.17,.35,.2,{text:String(index),size:8,color:theme.muted,align:'r',fill:theme.background,stroke:theme.background});
  return `${xmlhead}<p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="${officeRel}" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/><a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr>${shapes}</p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sld>`;
