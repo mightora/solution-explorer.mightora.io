@@ -48,7 +48,7 @@ jobs:
             https://raw.githubusercontent.com/mightora/mightora.io/main/static/images/tweedTechnologyLogoLight.png \
             --output assets/footer-tweed.png || rm -f assets/footer-tweed.png
       - run: npm run check
-      - uses: actions/configure-pages@v5
+      - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
