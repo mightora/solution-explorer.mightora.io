@@ -7,7 +7,7 @@ import {createRequire} from 'node:module';
 const require=createRequire(import.meta.url),JSZip=require('../vendor/jszip.cjs'),DOMParser=require('./support/xmldom').DOMParser;
 const root=path.resolve(import.meta.dirname,'..');
 const sandbox={DOMParser,JSZip,Blob,console,Date};sandbox.globalThis=sandbox;
-for(const file of ['src/parser.js','src/component-catalog.js','src/object-explorer.js','src/samples.js','src/report-core.js','src/office-export.js'])
+for(const file of ['src/parser.js','src/component-catalog.js','src/form-preview.js','src/object-explorer.js','src/samples.js','src/report-core.js','src/form-report.js','src/office-export.js'])
  vm.runInNewContext(fs.readFileSync(path.join(root,file),'utf8'),sandbox,{filename:file});
 const {SolutionReports, SolutionOffice,SolutionSamples}=sandbox;
 const project=SolutionSamples.load('project-v1'),newer=SolutionSamples.load('project-v2');
@@ -62,4 +62,28 @@ test('change comparison Word and PowerPoint contain before and after results',as
   const text=strings.join('');
   assert.ok(text.includes('mt_milestone'));assert.ok(text.includes('mt_project'));
  }
+});
+
+test('showcase form layout appears in editable Word and PowerPoint documentation',async()=>{
+ const sample=SolutionSamples.load('architecture-tour');
+ assert.ok(sample.formLayouts?.some(f=>f.name==='Application Review'));
+ const form=sample.formLayouts.find(f=>f.name==='Application Review');
+ assert.equal(form.tabs.length,2);
+ const report=SolutionReports.single(sample);
+ assert.ok(report.sections.some(s=>s.title==='Model-driven form layouts'));
+ assert.ok(report.forms.some(f=>f.name==='Application Review'));
+ const wordZip=await JSZip.loadAsync(await (await SolutionOffice.docx(report)).arrayBuffer());
+ const word=await wordZip.file('word/document.xml').async('string');
+ assert.ok(word.includes('Application Review'));
+ assert.ok(word.includes('mt_reference'));
+ assert.ok(word.includes('<w:tbl>'));
+ const pptZip=await JSZip.loadAsync(await (await SolutionOffice.pptx(report)).arrayBuffer());
+ const slides=await Promise.all(Object.keys(pptZip.files).filter(x=>/^ppt\/slides\/slide\d+\.xml$/.test(x)).map(x=>pptZip.file(x).async('string')));
+ assert.ok(slides.some(x=>x.includes('Form preview')&&x.includes('mt_reference')&&x.includes('<p:sp>')));
+});
+test('form layout changes are included in A/B documentation',()=>{
+ const baseline=SolutionSamples.load('project-v1'),newer=SolutionSamples.load('architecture-tour');
+ const report=SolutionReports.comparison(baseline,newer);
+ assert.ok(report.sections.some(s=>s.title==='Model-driven form changes'));
+ assert.ok(report.forms.some(f=>f.side==='Newer B'));
 });
