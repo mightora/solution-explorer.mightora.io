@@ -131,3 +131,13 @@ test('online and offline releases bundle both editable Office report engines in 
  assert.ok(offline.includes('Editable PowerPoint report'))
  for(const f of ['src/report-core.js','src/office-export.js','src/report-ui.js'])assert.ok(fs.existsSync(path.join(dir,f)));
 });
+
+test('model-driven form preview and reporting are present in online and offline bundles',()=>{
+ const online=fs.readFileSync(path.join(dir,'index.html'),'utf8');
+ const offline=fs.readFileSync(path.join(dir,'downloads/solution-explorer-offline.html'),'utf8');
+ for(const content of [online,offline])for(const id of ['form-preview','form-preview-choice','form-preview-stage'])assert.ok(content.includes('id="'+id+'"'));
+ assert.ok(offline.includes('SolutionForms'));
+ assert.ok(offline.includes('Form preview'));
+ assert.ok(offline.includes('Form layout changes'));
+ assert.ok(!offline.includes('footer-logo-fallback.js'));
+});

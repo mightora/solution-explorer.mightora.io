@@ -32,7 +32,7 @@
      files.set(path,contents);
    }
    if(!files.size)throw Error('No supported metadata files were found inside the ZIP.');
-   const model=SolutionCore.parseSolution(files,checksums);model.flowDetails=SolutionFlowExplorer.collect(files);const enriched=SolutionObjectExplorer.enrich(model,files);return {...enriched,info:{...model.info,filename:file.name}};
+   const model=SolutionCore.parseSolution(files,checksums);model.flowDetails=SolutionFlowExplorer.collect(files);const enriched=SolutionObjectExplorer.enrich(SolutionForms.enrich(model,files),files);return {...enriched,info:{...model.info,filename:file.name}};
  }
  async function handle(file,slot){
    if(!file||state.loading)return;state.loading=true;status(`Reading ${file.name} locally…`);

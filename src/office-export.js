@@ -110,6 +110,25 @@ function diagramPage(diag,chunk,part,total,t,position){const nodes=chunk;
   for(const n of nodes){const p=pos.get(n);put('shape',[`Entity ${n}`,p.x,p.y,2.44,.75,{fill:theme.soft,stroke:theme.primary,text:n,size:12,bold:true,color:theme.ink,pad:.12}]);}
  },t,position);
 }
+// Editable form wireframe pages: every label, input outline and section is a native PowerPoint shape.
+function formLayoutPage(form,tab,t,position){
+ return makeSlide('Form preview — '+form.name, (form.side?form.side+' · ':'')+form.table+' · '+tab.name+' · structural wireframe',(put,theme)=>{
+   const sections=(tab.sections||[]).slice(0,4);
+   const positions=[[.68,1.7],[6.8,1.7],[.68,4.25],[6.8,4.25]];
+   for(let i=0;i<sections.length;i++){
+    const sec=sections[i],p=positions[i],x=p[0],y=p[1],w=5.84;
+    put('shape',['Section '+sec.name,x,y,w,.35,{text:sec.name,size:12,bold:true,color:theme.ink,fill:theme.soft,stroke:theme.primary,pad:.09}]);
+    let shown=0;
+    for(const f of sec.fields.slice(0,4)){
+      let ty=y+.40+shown*.43;
+      put('shape',['Label '+f.label,x+.10,ty,1.85,.32,{text:f.label,size:9.5,color:theme.ink,fill:theme.background,stroke:theme.background,pad:.03}]);
+      put('shape',['Editable '+f.kind+' '+(f.field||''),x+2.0,ty,3.65,.32,{text:f.kind==='Field'?f.field:f.kind,size:9,color:theme.muted,fill:theme.background,stroke:theme.muted,pad:.04}]);
+      shown++;
+    }
+    if(sec.fields.length>4)put('shape',['Additional controls',x+.12,y+2.16,w-.24,.18,{text:`+${sec.fields.length-4} additional controls described in the DOCX`,size:8,color:theme.muted,fill:theme.background,stroke:theme.background}]);
+   }
+ },t,position);
+}
 async function pptx(report,opts={}){
  if(!root.JSZip)throw Error('ZIP library not loaded.');const theme=selectTheme(opts),pages=[];
  const add=(s)=>{if(pages.length<225)pages.push(s);};
@@ -132,6 +151,15 @@ async function pptx(report,opts={}){
   // Group diagram nodes by documented connections. The full connection list appears separately in the editable inventory tables.
   const nodes=[...new Set(diag.links.flatMap(l=>[l.source,l.target]))].slice(0,64),parts=Math.ceil(nodes.length/8);
   for(let i=0;i<parts;i++){if(pages.length>=220)break;add(diagramPage(diag,nodes.slice(i*8,(i+1)*8),i,parts,theme,pages.length+1));}
+ }
+ // Form previews use editable PowerPoint shapes, not screenshots.
+ let formPages=0;
+ for(const form of report.forms||[]){
+  if(pages.length>=220||formPages>=24)break;
+  for(const tab of (form.tabs||[]).slice(0,3)){
+   if(pages.length>=220||formPages>=24)break;
+   add(formLayoutPage(form,tab,theme,pages.length+1));formPages++;
+  }
  }
  if(pages.length>=220)add(contentsPage('Presentation size limit','Some detail may be omitted to respect the 225-slide export limit. Download the DOCX or CSV for a longer report.',['Full metadata can be exported as JSON or CSV from Solution Explorer.'],theme,pages.length+1));
  const zip=new root.JSZip();

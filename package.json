@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "build": "node scripts/build.mjs",
-    "test": "node --test tests/parser.test.mjs tests/flow.test.mjs tests/object-explorer.test.mjs tests/report.test.mjs",
+    "test": "node --test tests/parser.test.mjs tests/flow.test.mjs tests/object-explorer.test.mjs tests/report.test.mjs tests/form-preview.test.mjs",
     "check": "npm run test && npm run build && node --test tests/build.test.mjs"
   },
   "license": "MIT",
