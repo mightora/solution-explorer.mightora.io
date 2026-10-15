@@ -1,4 +1,4 @@
-import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs';import path from 'node:path';import {createRequire} from 'node:module';
+import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs';import path from 'node:path';import vm from 'node:vm';import {createRequire} from 'node:module';
 const require=createRequire(import.meta.url),JSZip=require('../vendor/jszip.cjs');const dir=path.resolve(import.meta.dirname,'../dist');
 test('standalone HTML has all runtime source and restrictive CSP',()=>{
  const offline=fs.readFileSync(path.join(dir,'downloads/solution-explorer-offline.html'),'utf8');
@@ -87,4 +87,36 @@ test('object browser works in the online and standalone offline releases',()=>{
  assert.ok(offline.includes('SolutionObjectExplorer'));
  assert.ok(fs.existsSync(path.join(dir,'src/object-explorer.js')));
  assert.ok(fs.existsSync(path.join(dir,'src/object-ui.js')));
+});
+
+
+test('standalone inline runtime exactly matches the online application modules in load order',()=>{
+ const root=path.resolve(import.meta.dirname,'..');
+ const online=fs.readFileSync(path.join(dir,'index.html'),'utf8');
+ const offline=fs.readFileSync(path.join(dir,'downloads/solution-explorer-offline.html'),'utf8');
+ const paths=[...online.matchAll(/<script\s+src="((?:vendor|src)\/[A-Za-z0-9_./-]+\.js)"\s+defer><\/script>/g)].map(m=>m[1]);
+ assert.ok(paths.includes('src/parser.js'));
+ assert.ok(paths.includes('src/component-catalog.js'));
+ assert.ok(paths.includes('src/object-explorer.js'));
+ assert.ok(paths.includes('src/object-ui.js'));
+ assert.ok(paths.indexOf('src/parser.js')<paths.indexOf('src/component-catalog.js'));
+ assert.ok(paths.indexOf('src/component-catalog.js')<paths.indexOf('src/object-explorer.js'));
+ assert.ok(paths.indexOf('src/object-explorer.js')<paths.indexOf('src/object-ui.js'));
+ assert.ok(paths.indexOf('src/object-ui.js')<paths.indexOf('src/app.js'));
+ const inline=[...offline.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m=>m[1]);
+ const expected=paths.map(p=>fs.readFileSync(path.join(root,p),'utf8').replaceAll('</script','<\\/script')).join('\n;\n');
+ assert.ok(inline.includes(expected),'offline runtime must embed every online module, unmodified and in order');
+ assert.doesNotThrow(()=>new vm.Script(expected));
+});
+test('offline core can initialise object explorer using only its bundled metadata modules',()=>{
+ const root=path.resolve(import.meta.dirname,'..');
+ const context={}; context.globalThis=context;
+ for(const pathName of ['src/parser.js','src/component-catalog.js','src/samples.js','src/flow-explorer.js','src/object-explorer.js'])
+  vm.runInNewContext(fs.readFileSync(path.join(root,pathName),'utf8'),context,{filename:pathName});
+ assert.equal(typeof context.SolutionObjectExplorer.enrich,'function');
+ assert.equal(typeof context.SolutionCore.COVERAGE,'object');
+ const sample=context.SolutionSamples.files('architecture-tour');
+ // Structural metadata is built without a browser network connection.
+ assert.equal(typeof context.SolutionObjectExplorer.group,'function');
+ assert.ok(sample.has('customizations.xml'));
 });
