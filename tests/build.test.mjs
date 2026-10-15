@@ -52,3 +52,15 @@ test('Mightora footer, author and live badges follow the design system',()=>{
  assert.match(offline,/<div class="footer-main">/);
  assert.ok(!offline.includes('src="https://techtweedie.github.io/images/author/'));
 });
+
+
+test('flow map controls and implementation are included online and offline',()=>{
+ const site=fs.readFileSync(path.join(dir,'index.html'),'utf8');
+ const offline=fs.readFileSync(path.join(dir,'downloads/solution-explorer-offline.html'),'utf8');
+ for(const text of [site,offline]){
+  for(const id of ['flow-explorer','flow-choice','flow-json-picker','flow-map','flow-export-mermaid']) assert.ok(text.includes(id));
+ }
+ assert.ok(fs.existsSync(path.join(dir,'src/flow-explorer.js')));
+ assert.ok(fs.existsSync(path.join(dir,'src/flow-ui.js')));
+ assert.ok(offline.includes('SolutionFlowExplorer'));
+});
