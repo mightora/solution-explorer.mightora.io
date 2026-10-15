@@ -37,7 +37,7 @@
  async function handle(file,slot){
    if(!file||state.loading)return;state.loading=true;status(`Reading ${file.name} locally…`);
    const id=slot==='a'?'primary':'compare';$(id+'-picker').disabled=true;
-   try{const model=await readZip(file);state[slot]=model;$(id+'-label').textContent=file.name;status(`Loaded ${file.name} — ${model.components.length} components found.`);render();}
+   try{const model=await readZip(file);state[slot]=model;$(id+'-label').textContent=file.name;status(`Loaded ${file.name} — ${model.components.length} components found.`);render();return model;}
    catch(e){status(e.message||'Could not read the solution ZIP.',true);}
    finally{state.loading=false;$(id+'-picker').disabled=false;}
  }
@@ -156,5 +156,24 @@
  $('close-dialog').addEventListener('click',()=>$('component-dialog').close());$('component-dialog').addEventListener('click',e=>{if(e.target===$('component-dialog'))$('component-dialog').close();});
  $('refresh-network').addEventListener('click',refreshNetwork);
  if(document.documentElement.dataset.offline==='true'){$('offline-banner').hidden=false;for(const id of ['offline-html-link','offline-zip-link']){const link=$(id);if(link)link.hidden=true;}}
+
+ // Reuse the exact existing ZIP parser and all its diagrams/reports from a Dataverse
+ // web resource. These functions are only called after an explicit user action.
+ globalThis.MightoraSolutionWorkbench={
+   async loadZip(file,slot='a'){
+     if(slot!=='a'&&slot!=='b')throw Error('Invalid workspace slot.');
+     const model=await handle(file,slot);
+     if(!model)throw Error('The exported ZIP could not be inspected. See workspace status.');
+     return model;
+   },
+   loadModel(model,slot='a'){
+     if(slot!=='a'&&slot!=='b')throw Error('Invalid workspace slot.');
+     if(!model?.components||!model.info)throw Error('Invalid solution component metadata.');
+     state[slot]=model;
+     $(slot==='a'?'primary-label':'compare-label').textContent=model.info.filename||model.info.name||'Live inventory';
+     status('Loaded '+model.components.length+' discovered component references (metadata-only; not a ZIP).');
+     render();return model;
+   }
+ };
  refreshNetwork();render();
 })();

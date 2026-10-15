@@ -1,0 +1,11 @@
+<section id="dataverse-environment" class="dv-environment container" aria-labelledby="dv-title">
+  <div class="dv-heading"><div><span class="section-kicker">SIGNED-IN DATAVERSE ENVIRONMENT</span><h1 id="dv-title">Explore an environment solution</h1><p>Select a solution already installed in this environment, or load a ZIP in the workspace below. Select A and B separately to compare versions and generate editable reports.</p></div><span class="dv-connection-pill">Current user · current environment</span></div>
+  <div class="dv-picker-grid panel">
+    <label for="dv-search">Search solutions<input id="dv-search" type="search" autocomplete="off" placeholder="Search name or unique name"></label>
+    <label for="dv-solution">Installed solution<select id="dv-solution"><option value="">Checking Dataverse…</option></select></label>
+    <label for="dv-slot">Open into<select id="dv-slot"><option value="a">A · Baseline / inspect</option><option value="b">B · Newer / compare</option></select></label>
+    <div class="dv-picker-actions"><button id="dv-open" class="btn btn-primary" type="button" disabled>Open in Explorer ↗</button><button id="dv-refresh" class="btn btn-outline" type="button">Refresh solutions</button></div>
+  </div>
+  <p id="dv-status" class="dv-status" role="status" aria-live="polite">Checking the Dataverse connection…</p>
+  <p class="dv-permissions">Only actions available to your signed-in user are permitted. Opening an unmanaged solution calls <code>ExportSolution</code> in this environment. Managed solutions provide a metadata-only inventory because Microsoft does not permit exporting an installed managed solution. No records are changed.</p>
+</section>

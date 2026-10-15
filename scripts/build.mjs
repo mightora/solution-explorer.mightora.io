@@ -1,4 +1,4 @@
-import fs from 'node:fs';import path from 'node:path';import vm from 'node:vm';import {createRequire} from 'node:module';import {fileURLToPath} from 'node:url';
+import crypto from 'node:crypto';import fs from 'node:fs';import path from 'node:path';import vm from 'node:vm';import {createRequire} from 'node:module';import {fileURLToPath} from 'node:url';
 const require=createRequire(import.meta.url);const JSZip=require('../vendor/jszip.cjs');
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');const dist=path.join(root,'dist');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
@@ -99,4 +99,46 @@ const zip=new JSZip();zip.file('index.html',offline);zip.file('README.txt',readm
 write('.nojekyll','');write('robots.txt','User-agent: *\nAllow: /\nSitemap: https://solution-explorer.mightora.io/sitemap.xml\n');
 write('sitemap.xml','<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>https://solution-explorer.mightora.io/</loc></url></urlset>');
 write('CNAME','solution-explorer.mightora.io\n');
+// Dataverse edition: reuse the proven self-contained offline code, then enable
+// authenticated same-origin Web API access and inject a compact environment picker.
+// No runtime CDN, Microsoft login secrets, or Mightora backend is required.
+const dvPanel=read('dataverse/panel.html'),dvCss=read('src/dataverse.css');
+const dvRuntime=[read('src/dataverse-solutions.js'),read('src/dataverse-ui.js')].map(s=>s.replaceAll('</script','<\\/script')).join('\n;\n');
+const brandLogo=fs.existsSync(brandFile)?'data:image/png;base64,'+fs.readFileSync(brandFile).toString('base64'):
+ 'data:image/svg+xml;base64,'+Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="720" height="150" viewBox="0 0 720 150"><rect width="720" height="150" fill="#15263c"/><text x="12" y="107" font-family="Arial,sans-serif" font-weight="800" font-size="92" fill="white">MIGHTORA</text></svg>').toString('base64');
+let dv=offline.replace('<html lang="en-GB" data-offline="true">','<html lang="en-GB" data-dataverse="true">');
+dv=dv.replace(/<meta http-equiv="Content-Security-Policy"[^>]*>/i,'');
+dv=dv.replace(/<script type="application\/ld\+json">[\s\S]*?<\/script>/i,'');
+dv=dv.replace(/<script>\s*if\s*\(window\.location\.hostname\s*===\s*'solution-explorer\.mightora\.io'[\s\S]*?<\/script>/i,'');
+dv=dv.replace(/<link rel="canonical"[^>]*>/i,'').replace(/<meta name="robots"[^>]*>/i,'');
+dv=dv.replace(/<title>[\s\S]*?<\/title>/i,'<title>Mightora Solution Explorer — Dataverse Edition</title>');
+dv=dv.replace(/<meta name="description"[^>]*>/i,'<meta name="description" content="Self-contained Dataverse solution explorer for model-driven apps">');
+// The offline edition has the complete runtime in one script. Append only the
+// Dataverse adapter and picker after its public parser and UI have initialised.
+const embedded=`<script>${js}</script>`;
+if(!dv.includes(embedded))throw Error('Cannot locate self-contained Explorer runtime for Dataverse edition.');
+dv=dv.replace(embedded,()=>`<script>${js}\n;\n${dvRuntime}</script>`);
+const dvHeader=`<header class="dv-topbar"><div class="dv-topbrand"><img class="dv-brand-img" alt="Mightora" src="${brandLogo}"><span class="dv-product">Solution Explorer / Dataverse</span></div><nav class="dv-nav" aria-label="Workspace sections"><a href="#dataverse-environment">Environment</a><a href="#workspace">ZIP files</a><a href="#object-browser">Objects</a><a href="#form-preview">Forms</a><a href="#flow-explorer">Flows</a><a href="#report-builder">Reports</a><a href="#comparison">Compare</a></nav></header>`;
+const dvFooter='<footer class="dv-bottom"><strong>Mightora Solution Explorer</strong><span>Connected to the current Dataverse environment · No data sent to Mightora</span><a href="https://mightora.io" target="_blank" rel="noopener noreferrer">Mightora</a><a href="https://github.com/mightora/solution-explorer.mightora.io" target="_blank" rel="noopener noreferrer">Source</a><a href="https://github.com/mightora/solution-explorer.mightora.io/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">MIT licence</a></footer>';
+dv=dv.replace('<body>','<body>'+dvHeader).replace('<section id="workspace"',dvPanel+'\n<section id="workspace"');
+dv=dv.replace('</body>',dvFooter+'</body>');
+dv=dv.replace('</head>','<style>'+dvCss+'</style></head>');
+// Remove remote images from the Dataverse document, even from hidden marketing
+// sections: they must not attempt browser network requests when this page loads.
+dv=dv.replace(/<img\b[^>]*src="https?:\/\/[^\"]*"[^>]*>/gi,'<span class="dv-image-placeholder" aria-hidden="true"></span>');
+// Enforce a genuine hashed script CSP. The original editor uses inline styles,
+// so style-src retains unsafe-inline; scripts themselves are hash-locked.
+const hashes=source=>[...new Set([...source.matchAll(/<script(?:\s+[^>]*)?>([\s\S]*?)<\/script>/gi)]
+ .map(m=>"'sha256-"+crypto.createHash('sha256').update(m[1]).digest('base64')+"'"))].join(' ');
+const scriptHashes=hashes(dv);
+if(!scriptHashes||!/MightoraDataverseSolutions/.test(dv))throw Error('Dataverse runtime is incomplete.');
+const csp=`<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src ${scriptHashes}; style-src 'unsafe-inline'; connect-src 'self'; img-src data: blob:; font-src data:; object-src 'none'; base-uri 'none'; form-action 'none'">`;
+dv=dv.replace('<meta name="theme-color"',csp+'\n<meta name="theme-color"');
+write('dataverse/solution-explorer.html',dv);
+const dvReadme=read('dataverse/README.md');
+const dvZip=new JSZip();dvZip.file('solution-explorer.html',dv);dvZip.file('README.md',dvReadme);dvZip.file('LICENSE',license);
+const dvData=await dvZip.generateAsync({type:'nodebuffer',compression:'DEFLATE',compressionOptions:{level:8}});
+write('downloads/solution-explorer-Dataverse.zip',dvData);
+write('dataverse/README.md',dvReadme);
+console.log('Built self-contained Dataverse web resource ('+(Buffer.byteLength(dv)/1024).toFixed(0)+' KB HTML) and ZIP ('+(dvData.length/1024).toFixed(0)+' KB).');
 console.log(`Built ${path.relative(root,dist)}: online app + ${(data.length/1024).toFixed(1)} KB standalone offline ZIP`);
