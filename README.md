@@ -101,3 +101,11 @@ Reports describe locally extracted metadata, not live environment state; unsuppo
 ## Model-driven form preview
 
 When a Dataverse exported solution contains `FormXml`, Solution Explorer extracts form names and static tabs/sections/fields into a read-only interactive preview. In single and A/B documentation, editable Word tables describe the form hierarchy and native PowerPoint shapes show representative wireframes. The parser never runs scripts or includes live form data. Managed form layering, PCF controls and runtime visibility are not simulated. The component showcase example includes an illustrative Application Review form.
+
+## Editable diagram coverage (Word and PowerPoint)
+
+The single-solution and A→B change reports include **every available diagram family derivable from extracted metadata**: solution-component landscape; table relationships; integration and connection references; security; business logic; plug-in registrations; explicit missing dependencies; per-flow branching/runAfter maps; and model-driven form previews. Comparison reports add before/after diagrams for both exports and a colour-coded change-component view. Form controls and Power Automate steps are rendered as editable Office objects, not screenshot images.
+
+The online **Power Automate Flow Explorer** now uses a structured, branch-aware SVG: clearly labelled condition YES/NO and switch branches, nested scope guides, and solid connectors only for explicit runAfter dependencies. Trigger-entry links are visually distinct. Independent actions are not falsely shown as sequential.
+
+Word uses editable table-based structural diagrams with explicit edge inventories; PowerPoint uses native shapes and connectors. The underlying flow parser still limits each flow to 250 actions (and the interactive visual map to 140). The extended PowerPoint diagram pack has a 400-slide upper bound; on extremely large reports, a coverage notice is included, and users can use the full editable Word inventory. Binary definitions or absent metadata cannot be reconstructed.

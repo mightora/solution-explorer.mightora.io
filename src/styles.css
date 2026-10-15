@@ -151,3 +151,12 @@ dialog{border:1px solid #dfe3ec;border-radius:16px;box-shadow:0 35px 110px #1320
 .form-wire-empty{padding:30px;text-align:center;color:#687993;font-size:13px}.form-preview-note{margin:11px 0 0}
 .footer-logo-fallback{display:inline-flex;align-items:center;justify-content:center;min-height:28px;color:#fff;font-weight:800;font-size:14px;letter-spacing:.03em}.evidence-text-fallback{display:inline-block;font-weight:700;font-size:10px;border-radius:4px;border:1px solid #cbd3df;padding:3px 8px;color:#43536d;background:#f5f6fa;max-width:180px}
 @media(max-width:700px){.form-wire-body{grid-template-columns:1fr}.form-wire-section{grid-column:auto}.form-wire-field{grid-template-columns:minmax(90px,1fr) minmax(0,2fr)}.form-wire-top{padding:16px}.form-preview-stage{padding:10px}}
+
+/* Clear, scrollable Power Automate flow lanes. Interactivity is preserved on SVG action cards. */
+.flow-map{background:#f5f7fc;overscroll-behavior:contain;scrollbar-gutter:stable;min-height:300px}
+.flow-map svg{max-width:none;height:auto;min-width:900px}
+.flow-map [data-flow-step] rect:first-child{transition:stroke .16s ease,stroke-width .16s ease}
+.flow-map [data-flow-step]:hover rect:first-child,.flow-map [data-flow-step].flow-selected rect:first-child{stroke:#6957db;stroke-width:3}
+.flow-map [data-flow-step]:focus-visible{outline:3px solid var(--fb-accent);outline-offset:2px}
+@media (max-width:750px){.flow-map svg{min-width:900px}}
+@media (prefers-reduced-motion:reduce){.flow-map [data-flow-step] rect:first-child{transition:none}}

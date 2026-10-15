@@ -152,3 +152,11 @@ test('deployed footer image assets are included when fetched, and browser fallba
   if(fs.existsSync(asset))assert.ok(fs.existsSync(path.join(dir,'assets',file)));
  }
 });
+
+test('expanded diagram modules are present in online and offline Office report releases',()=>{
+ const online=fs.readFileSync(path.join(dir,'index.html'),'utf8');
+ const offline=fs.readFileSync(path.join(dir,'downloads/solution-explorer-offline.html'),'utf8');
+ for(const name of ['flow-layout.js','report-visuals.js','office-diagrams.js'])assert.ok(online.includes('src/'+name));
+ for(const term of ['api.layout=layout','report.visuals','office.docx=docx','office.pptx=pptx'])assert.ok(offline.includes(term));
+ for(const file of ['src/flow-layout.js','src/report-visuals.js','src/office-diagrams.js'])assert.ok(fs.existsSync(path.join(dir,file)));
+});

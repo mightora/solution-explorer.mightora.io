@@ -8,12 +8,12 @@ function formSections(forms){
  const output=[];
  if(!forms?.length)return output;
  const summary=forms.map(f=>[f.table,f.name,f.type,String(f.tabCount),String(f.sectionCount),String(f.fieldCount)]);
- output.push({title:'Model-driven form layouts',note:'These diagrams and tables approximate structural tab/section/field arrangements from FormXML. They do not reproduce live rendering, PCF visuals, scripts, rules or environment data.',paragraphs:[],tables:[{title:'Form overview',headers:['Table','Form','Type','Tabs','Sections','Controls'],rows:summary.slice(0,100)}]});
- for(const f of forms.slice(0,24)){
+ output.push({title:'Model-driven form layouts',note:'These diagrams and tables approximate structural tab/section/field arrangements from FormXML. They do not reproduce live rendering, PCF visuals, scripts, rules or environment data.',paragraphs:[],tables:[{title:'Form overview',headers:['Table','Form','Type','Tabs','Sections','Controls'],rows:summary}]});
+ for(const f of forms){
   const rows=[];
   for(const t of f.tabs)for(const s of t.sections)for(const field of s.fields)
    rows.push([t.name,s.name,String(s.column+1),field.label,field.field||'—',field.kind]);
-  output.push({title:`Form layout — ${slice(f.name)}`,note:`Table: ${slice(f.table)} · Type: ${slice(f.type)} · ${f.tabCount} tabs / ${f.sectionCount} sections. This is a read-only approximation.`,paragraphs:[],tables:[{title:'Editable form wireframe map',headers:['Tab','Section','Column','Control label','Dataverse field','Control kind'],rows:rows.slice(0,650)}]});
+  output.push({title:`Form layout — ${slice(f.name)}`,note:`Table: ${slice(f.table)} · Type: ${slice(f.type)} · ${f.tabCount} tabs / ${f.sectionCount} sections. This is a read-only approximation.`,paragraphs:[],tables:[{title:'Editable form wireframe map',headers:['Tab','Section','Column','Control label','Dataverse field','Control kind'],rows:rows.slice(0,900)}]});
  }
  return output;
 }
@@ -29,9 +29,9 @@ reports.comparison=function(a,b){const r=baseComparison(a,b);const prior=a.formL
  for(const [id,f] of current){const p=old.get(id);states.push([f.table,f.name,!p?'Added':p.fingerprint===f.fingerprint?'Unchanged':'Changed',p?.fingerprint||'—',f.fingerprint]);}
  for(const [id,f] of old)if(!current.has(id))states.push([f.table,f.name,'Removed',f.fingerprint,'—']);
  if(states.length)insertBefore(r.sections,'Completeness and limitations',[
-  {title:'Model-driven form changes',note:'Layout fingerprints compare extracted tabs, sections and controls rather than raw FormXML. The slides that follow show available baseline and newer layouts.',paragraphs:[],tables:[{title:'Form layout changes — A to B',headers:['Table','Form','Status','Baseline layout','Newer layout'],rows:states.slice(0,100)}]}
+  {title:'Model-driven form changes',note:'Layout fingerprints compare extracted tabs, sections and controls rather than raw FormXML. The slides that follow show available baseline and newer layouts.',paragraphs:[],tables:[{title:'Form layout changes — A to B',headers:['Table','Form','Status','Baseline layout','Newer layout'],rows:states}]}
  ]);
- r.forms=[...prior.slice(0,8).map(f=>({...f,side:'Baseline A'})),...newer.slice(0,8).map(f=>({...f,side:'Newer B'}))];
+ r.forms=[...prior.map(f=>({...f,side:'Baseline A'})),...newer.map(f=>({...f,side:'Newer B'}))];
  r.totalRows=r.sections.flatMap(s=>s.tables||[]).reduce((n,t)=>n+t.rows.length,0);
  return r;};
 })(globalThis);
