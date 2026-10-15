@@ -5,7 +5,7 @@ const read=p=>fs.readFileSync(path.join(root,p),'utf8');
 const write=(p,s)=>{const dest=path.join(dist,p);fs.mkdirSync(path.dirname(dest),{recursive:true});fs.writeFileSync(dest,s);};
 const copy=p=>{const dest=path.join(dist,p);fs.mkdirSync(path.dirname(dest),{recursive:true});fs.copyFileSync(path.join(root,p),dest);};
 fs.rmSync(dist,{recursive:true,force:true});fs.mkdirSync(dist,{recursive:true});
-for(const p of ['index.html','src/styles.css','src/parser.js','src/component-catalog.js','src/samples.js','src/diagrams.js','src/flow-explorer.js','src/flow-ui.js','src/app.js','vendor/jszip.min.js','LICENSE'])copy(p);
+for(const p of ['index.html','src/styles.css','src/parser.js','src/component-catalog.js','src/samples.js','src/diagrams.js','src/flow-explorer.js','src/object-explorer.js','src/flow-ui.js','src/object-ui.js','src/app.js','vendor/jszip.min.js','LICENSE'])copy(p);
 // Produce downloadable teaching ZIPs from the exact same sample definitions used in the browser.
 const sampleScope={};sampleScope.globalThis=sampleScope;
 vm.runInNewContext(read('src/samples.js'),sampleScope,{filename:'src/samples.js'});

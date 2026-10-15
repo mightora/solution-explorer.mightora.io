@@ -76,3 +76,15 @@ test('expanded inventory and issue reporting links appear in both editions',()=>
  assert.ok(offline.includes('SolutionCore.COVERAGE'));
  assert.ok(fs.existsSync(path.join(dir,'src/component-catalog.js')));
 });
+
+test('object browser works in the online and standalone offline releases',()=>{
+ const online=fs.readFileSync(path.join(dir,'index.html'),'utf8');
+ const offline=fs.readFileSync(path.join(dir,'downloads/solution-explorer-offline.html'),'utf8');
+ for(const html of [online,offline]){
+  for(const id of ['object-browser','object-tree','object-inspector','object-search','object-coverage','object-expand-all','object-collapse-all'])
+   assert.ok(html.includes('id="'+id+'"'),id);
+ }
+ assert.ok(offline.includes('SolutionObjectExplorer'));
+ assert.ok(fs.existsSync(path.join(dir,'src/object-explorer.js')));
+ assert.ok(fs.existsSync(path.join(dir,'src/object-ui.js')));
+});

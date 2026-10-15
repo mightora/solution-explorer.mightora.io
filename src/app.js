@@ -32,7 +32,7 @@
      files.set(path,contents);
    }
    if(!files.size)throw Error('No supported metadata files were found inside the ZIP.');
-   const model=SolutionCore.parseSolution(files,checksums);model.flowDetails=SolutionFlowExplorer.collect(files);return {...model,info:{...model.info,filename:file.name}};
+   const model=SolutionCore.parseSolution(files,checksums);model.flowDetails=SolutionFlowExplorer.collect(files);const enriched=SolutionObjectExplorer.enrich(model,files);return {...enriched,info:{...model.info,filename:file.name}};
  }
  async function handle(file,slot){
    if(!file||state.loading)return;state.loading=true;status(`Reading ${file.name} locally…`);
@@ -59,7 +59,7 @@
    const kind=label(c.type).replace(/s$/,'');
    return `<div class="type-chip">${html(kind)}</div><p class="component-coverage"><strong>Coverage:</strong> ${html(SolutionCore.COVERAGE?.[c.coverage]||'Inspected metadata')}${c.source?' · '+html(c.source):''}</p><p>${html(c.description||'Solution metadata')}</p><table class="property-table"><tbody>${Object.entries(c.properties||{}).map(([k,v])=>`<tr><th>${html(k)}</th><td>${html(v)}</td></tr>`).join('')||'<tr><td>No additional properties in this export.</td></tr>'}</tbody></table><p class="dialog-note">Only discovered metadata is shown. Environment variable values and secret properties are not extracted.</p>`;
  }
- function showComponent(id){const c=state.componentMap.get(id);if(!c)return;$('dialog-title').textContent=c.name;$('dialog-content').innerHTML=componentDetails(c);$('component-dialog').showModal();}
+ function showComponent(id){const c=state.componentMap.get(id);if(!c)return;$('dialog-title').textContent=c.name;$('dialog-content').innerHTML=componentDetails(c)+'<div class="object-dialog-action"><button id="open-in-object-browser" type="button" class="btn btn-primary small">Explore object hierarchy ↗</button></div>';$('component-dialog').showModal();$('open-in-object-browser').addEventListener('click',()=>{$('component-dialog').close();document.dispatchEvent(new CustomEvent('object-open-request',{detail:{id}}));});}
  function renderInventory(){const m=state.a;const q=$('component-search').value.trim().toLowerCase(),type=$('type-filter').value,coverage=$('coverage-filter').value;
    state.componentMap=new Map((m?.components||[]).map(c=>[c.id,c]));
    const components=(m?.components||[]).filter(c=>(type==='all'||c.type===type)&&(coverage==='all'||(c.coverage||'inspected')===coverage)&&(c.name.toLowerCase().includes(q)||label(c.type).toLowerCase().includes(q)||Object.values(c.properties).some(x=>String(x).toLowerCase().includes(q))));

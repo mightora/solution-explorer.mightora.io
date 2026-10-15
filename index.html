@@ -25,7 +25,7 @@
  <div class="local-header"><a class="local-logo" href="https://mightora.io" aria-label="Mightora home"><span class="logo-emblem">m</span><span>Mightora</span></a><div class="local-header-name">/ Solution Explorer</div><a href="#workspace">Open workspace ↗</a></div>
 </mightora-header>
 <div id="offline-banner" class="offline-banner" hidden>Offline Edition – No Internet Connection Required</div>
-<nav class="quick-jump-nav" aria-label="Sections"><a href="#workspace">Workspace</a><a href="#inventory">Components</a><a href="#dependencies">Dependencies</a><a href="#architecture">Architecture</a><a href="#flow-explorer">Flow explorer</a><a href="#examples">Sample ZIPs</a><a href="#comparison">Compare</a><a href="#managed">Managed guidance</a><a href="#privacy">Privacy & trust</a><a href="#report-issue">Report an issue ↗</a></nav>
+<nav class="quick-jump-nav" aria-label="Sections"><a href="#workspace">Workspace</a><a href="#inventory">Components</a><a href="#object-browser">Object explorer</a><a href="#dependencies">Dependencies</a><a href="#architecture">Architecture</a><a href="#flow-explorer">Flow explorer</a><a href="#examples">Sample ZIPs</a><a href="#comparison">Compare</a><a href="#managed">Managed guidance</a><a href="#privacy">Privacy & trust</a><a href="#report-issue">Report an issue ↗</a></nav>
 <main id="main">
  <section class="hero container" aria-labelledby="headline">
   <div class="hero-copy"><div class="eyebrow"><span class="dot"></span> MIGHTORA DEVELOPER TOOLS <span class="divider-dot">/</span> POWER PLATFORM</div>
@@ -50,6 +50,22 @@
   <div class="panel inventory-panel"><div class="toolbar"><label class="search-wrap"><span aria-hidden="true">⌕</span><span class="sr-only">Search components</span><input id="component-search" type="search" placeholder="Search components, tables, flows..."></label><label class="select-wrap"><span class="sr-only">Component type</span><select id="type-filter"><option value="all">All component types</option></select></label><label class="select-wrap"><span class="sr-only">Inspection coverage</span><select id="coverage-filter"><option value="all">All coverage levels</option><option value="inspected">Inspected metadata</option><option value="discovered">Discovered only</option><option value="referenced">External references</option><option value="unsupported">Unsupported / unmapped</option></select></label></div>
   <div class="coverage-legend" id="coverage-legend" role="status">Load a solution to see inspected, discovered, referenced and unsupported components.</div>
   <div class="table-scroller"><table class="component-table"><thead><tr><th>COMPONENT</th><th>TYPE</th><th>COVERAGE</th><th>DETAILS</th><th><span class="sr-only">Explore</span></th></tr></thead><tbody id="component-rows"><tr><td colspan="5" class="empty-state">No solution loaded yet. Try the sample to start exploring.</td></tr></tbody></table></div><div class="table-footer"><span id="shown-components">Showing 0 components</span><span>Click a row for details ↗</span></div></div>
+ </section>
+<section id="object-browser" class="section container" aria-labelledby="object-browser-title">
+ <div class="section-top"><div><span class="section-kicker">EXPLORE & UNDERSTAND</span><h2 id="object-browser-title">Object explorer</h2><p>Expand component families, inspect individual objects, explore contained metadata and follow supported relationships. An export may describe an object without including its complete definition.</p></div><span class="count-pill" id="object-count">0 objects</span></div>
+ <div class="object-layout">
+  <div class="panel object-sidebar">
+   <div class="object-toolbar">
+    <label for="object-search" class="sr-only">Search solution objects</label><input type="search" id="object-search" placeholder="Search objects and properties..." autocomplete="off">
+    <label for="object-coverage" class="sr-only">Filter inspection coverage</label>
+    <select id="object-coverage"><option value="all">All inspection levels</option><option value="inspected">Inspected metadata</option><option value="discovered">Discovered only</option><option value="referenced">External references</option><option value="unsupported">Unsupported types</option></select>
+    <div class="object-toolbar-actions"><button type="button" class="text-button" id="object-expand-all">Expand groups</button><button type="button" class="text-button" id="object-collapse-all">Collapse groups</button></div>
+   </div>
+   <div id="object-tree" class="object-tree" aria-label="Solution component hierarchy"><p class="object-empty">Load a solution to explore its components.</p></div>
+  </div>
+  <div class="panel object-inspector-wrap"><div id="object-inspector" class="object-inspector" tabindex="-1" aria-label="Selected solution component details"><p class="object-empty">Select an object to inspect its properties and contained components.</p></div></div>
+ </div>
+ <p class="object-disclaimer">Objects and properties are extracted locally. Sensitive values, scripts and full definitions are not displayed. A component marked <strong>Discovered</strong> may only have manifest metadata; missing relationships are not evidence of independence.</p>
  </section>
  <section id="dependencies" class="section container" aria-labelledby="dependencies-title">
  <div class="section-top"><div><span class="section-kicker">COMPONENT RELATIONSHIPS</span><h2 id="dependencies-title">Dependencies & completeness</h2><p>Review dependencies explicitly declared missing by the exported solution. This is not a complete runtime dependency analysis; inspect component metadata and deployment validation too.</p></div><a class="btn btn-outline small" href="https://github.com/mightora/solution-explorer.mightora.io/issues/new?template=bug_report.yml" target="_blank" rel="noopener noreferrer">Missing a component? Report it ↗</a></div>
@@ -134,7 +150,7 @@
 <!-- ONLINE_SCRIPTS -->
 <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/gh/mightora/shared-ui@main/components.js" defer></script>
-<script src="vendor/jszip.min.js" defer></script><script src="src/parser.js" defer></script><script src="src/component-catalog.js" defer></script><script src="src/samples.js" defer></script><script src="src/diagrams.js" defer></script><script src="src/flow-explorer.js" defer></script><script src="src/flow-ui.js" defer></script><script src="src/app.js" defer></script>
+<script src="vendor/jszip.min.js" defer></script><script src="src/parser.js" defer></script><script src="src/component-catalog.js" defer></script><script src="src/samples.js" defer></script><script src="src/diagrams.js" defer></script><script src="src/flow-explorer.js" defer></script><script src="src/object-explorer.js" defer></script><script src="src/flow-ui.js" defer></script><script src="src/object-ui.js" defer></script><script src="src/app.js" defer></script>
 <!-- END_ONLINE_SCRIPTS -->
 
 <!-- Cloudflare Web Analytics: production only; no network traffic when opened locally/offline -->
