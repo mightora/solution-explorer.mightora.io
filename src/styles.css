@@ -62,3 +62,14 @@ dialog{border:1px solid #dfe3ec;border-radius:16px;box-shadow:0 35px 110px #1320
 .flow-properties dd{margin:0;color:#34435a;overflow-wrap:anywhere}
 .flow-step-details{font-size:12px;color:#66758d}
 @media(max-width:900px){.flow-layout{grid-template-columns:1fr}.flow-inspector{max-height:none}.flow-step-list{max-height:220px}}
+
+/* Extended component catalog, dependency review and issue links. */
+.coverage-legend{display:flex;gap:9px;flex-wrap:wrap;align-items:center;padding:12px 16px;font-size:12px;color:#53627d;background:#f8f9ff;border-top:1px solid #e8eaf6}
+.coverage-chip{display:inline-flex;gap:6px;align-items:center;border:1px solid #d7deec;padding:4px 10px;border-radius:999px;background:#fff}
+.coverage-chip strong{color:#33415e}
+.coverage-tag{display:inline-block;font-size:10px;border-radius:5px;padding:3px 8px;background:#e8f4fa;color:#26536b;font-weight:700;white-space:nowrap}
+.coverage-tag.discovered{background:#fff4dc;color:#755319}.coverage-tag.referenced{background:#efeaff;color:#584b86}.coverage-tag.unsupported{background:#fff0ee;color:#9b3f35}
+.component-coverage{font-size:12px;color:#47566d;overflow-wrap:anywhere}
+.dependency-panel{padding:12px}.dependency-panel table{width:100%;min-width:530px}.dependency-panel .coverage-legend{border-radius:8px}
+.issue-report-panel{padding:26px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}.issue-report-panel h3{font-size:17px}.issue-report-panel p{font-size:13px}.issue-report-panel>div+div{border-left:1px solid #e5e9f2;padding-left:24px}
+@media(max-width:750px){.issue-report-panel{grid-template-columns:1fr}.issue-report-panel>div+div{border-left:0;border-top:1px solid #e5e9f2;padding:20px 0 0}}

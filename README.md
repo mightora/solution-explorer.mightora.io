@@ -6,6 +6,11 @@ Live site (once deployed): https://solution-explorer.mightora.io
 
 ## Features
 
+- Discover extended component families: roles and privileges, field security, BPFs, custom APIs, plug-ins and images, PCF controls, choices and keys, charts, dashboards, commands/ribbon, connectors and webhooks, SLAs and routing, templates, duplicate detection, data maps, offline profiles, Power Pages, Copilot Studio and AI assets. Manifest-only entries are labelled **Discovered**, while unsupported type codes are shown explicitly.
+- Review declared missing dependencies and distinguish **Inspected**, **Discovered**, **Referenced** and **Unsupported** metadata.
+- Open pre-filled GitHub issue forms for parser defects and feature requests without uploading your files.
+
+
 - Drag and drop **managed or unmanaged Dataverse solution export ZIPs**.
 - Browse **tables, columns, relationships, cloud flows, classic workflows, web resources, environment variable definitions, connection references, apps, forms and views** where metadata is available.
 - Search and filter components, inspect properties, export inventories as **JSON or CSV**.

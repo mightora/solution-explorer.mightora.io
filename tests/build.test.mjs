@@ -64,3 +64,15 @@ test('flow map controls and implementation are included online and offline',()=>
  assert.ok(fs.existsSync(path.join(dir,'src/flow-ui.js')));
  assert.ok(offline.includes('SolutionFlowExplorer'));
 });
+
+test('expanded inventory and issue reporting links appear in both editions',()=>{
+ const online=fs.readFileSync(path.join(dir,'index.html'),'utf8');
+ const offline=fs.readFileSync(path.join(dir,'downloads/solution-explorer-offline.html'),'utf8');
+ for(const s of [online,offline]){
+  assert.ok(s.includes('coverage-filter'));assert.ok(s.includes('dependency-rows'));
+  assert.ok(s.includes('github.com/mightora/solution-explorer.mightora.io/issues/new?template=bug_report.yml'));
+  assert.ok(s.includes('github.com/mightora/solution-explorer.mightora.io/issues/new?template=feature_request.yml'));
+ }
+ assert.ok(offline.includes('SolutionCore.COVERAGE'));
+ assert.ok(fs.existsSync(path.join(dir,'src/component-catalog.js')));
+});

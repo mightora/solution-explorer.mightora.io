@@ -1,0 +1,40 @@
+name: Request a component or feature
+description: Suggest a new Dataverse solution component type, architecture view, integration or usability improvement.
+title: "[Feature request] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Tell us what the Explorer should recognise. Please don't attach real customer exports, sensitive metadata or secrets.
+  - type: dropdown
+    id: family
+    attributes:
+      label: Component family / feature
+      options:
+        - Dataverse data model
+        - Security & access
+        - Plug-ins / custom APIs / PCF
+        - Power Automate / business processes
+        - Apps / user interface / commands
+        - Integrations
+        - Power Pages
+        - Copilot Studio / AI
+        - Dependency & impact diagrams
+        - Source-control YAML solution format
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: use-case
+    attributes:
+      label: What would this help you do?
+      placeholder: Explain the intended task and why it matters.
+    validations:
+      required: true
+  - type: textarea
+    id: metadata
+    attributes:
+      label: What would you like the Explorer to show?
+      description: Examples can use synthetic components or public Microsoft documentation.
+    validations:
+      required: true

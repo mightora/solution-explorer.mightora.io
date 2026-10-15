@@ -42,7 +42,7 @@
    finally{state.loading=false;$(id+'-picker').disabled=false;}
  }
  function bindDrop(elementId,slot){const el=$(elementId);for(const eventName of ['dragenter','dragover'])el.addEventListener(eventName,e=>{e.preventDefault();el.classList.add('dragging');});for(const eventName of ['dragleave','drop'])el.addEventListener(eventName,e=>{e.preventDefault();el.classList.remove('dragging');});el.addEventListener('drop',e=>{const file=e.dataTransfer?.files?.[0];if(file)handle(file,slot);});}
- function render(){renderOverview();renderInventory();renderDiagram();renderDiff();renderManaged();renderWarnings();document.dispatchEvent(new CustomEvent('solution-workspace-change',{detail:{a:state.a}}));}
+ function render(){renderOverview();renderInventory();renderDependencies();renderDiagram();renderDiff();renderManaged();renderWarnings();document.dispatchEvent(new CustomEvent('solution-workspace-change',{detail:{a:state.a}}));}
  function renderOverview(){const m=state.a;
    $('solution-subtitle').textContent=m?`${m.info.name||m.info.filename||'Solution'} · v${m.info.version||'?'} · ${m.components.length.toLocaleString()} discovered components`:'Your architecture, one clear picture.';
    for(const type of ['table','column','relationship','flow','webresource','environment'])$('count-'+type).textContent=m?m.counts[type].toLocaleString():'—';
@@ -52,18 +52,25 @@
    else{const counts=Object.entries(m.counts).filter(([,v])=>v>0);const peak=Math.max(1,...counts.map(c=>c[1]));$('coverage-chart').innerHTML=counts.map(([k,v])=>`<div class="bar-line"><label>${html(label(k))}</label><div class="bar-track"><div class="bar-fill" style="width:${Math.round(v/peak*100)}%"></div></div><strong>${v}</strong></div>`).join('')||'<p>No supported components detected.</p>';}
    for(const id of ['download-json','download-csv','export-svg','export-mermaid'])$(id).disabled=!m;
    $('total-components').textContent=`${m?.components.length||0} components`;
+   const cover=m?.coverage||{inspected:0,discovered:0,referenced:0,unsupported:0};
+   $('coverage-legend').innerHTML=Object.entries(SolutionCore.COVERAGE||{}).map(([key,label])=>`<span class="coverage-chip ${key}"><strong>${cover[key]||0}</strong> ${html(label)}</span>`).join('');
  }
  function componentDetails(c){
    const kind=label(c.type).replace(/s$/,'');
-   return `<div class="type-chip">${html(kind)}</div><p>${html(c.description||'Solution metadata')}</p><table class="property-table"><tbody>${Object.entries(c.properties||{}).map(([k,v])=>`<tr><th>${html(k)}</th><td>${html(v)}</td></tr>`).join('')||'<tr><td>No additional properties in this export.</td></tr>'}</tbody></table><p class="dialog-note">Only discovered metadata is shown. Environment variable values and secret properties are not extracted.</p>`;
+   return `<div class="type-chip">${html(kind)}</div><p class="component-coverage"><strong>Coverage:</strong> ${html(SolutionCore.COVERAGE?.[c.coverage]||'Inspected metadata')}${c.source?' · '+html(c.source):''}</p><p>${html(c.description||'Solution metadata')}</p><table class="property-table"><tbody>${Object.entries(c.properties||{}).map(([k,v])=>`<tr><th>${html(k)}</th><td>${html(v)}</td></tr>`).join('')||'<tr><td>No additional properties in this export.</td></tr>'}</tbody></table><p class="dialog-note">Only discovered metadata is shown. Environment variable values and secret properties are not extracted.</p>`;
  }
  function showComponent(id){const c=state.componentMap.get(id);if(!c)return;$('dialog-title').textContent=c.name;$('dialog-content').innerHTML=componentDetails(c);$('component-dialog').showModal();}
- function renderInventory(){const m=state.a;const q=$('component-search').value.trim().toLowerCase(),type=$('type-filter').value;
+ function renderInventory(){const m=state.a;const q=$('component-search').value.trim().toLowerCase(),type=$('type-filter').value,coverage=$('coverage-filter').value;
    state.componentMap=new Map((m?.components||[]).map(c=>[c.id,c]));
-   const components=(m?.components||[]).filter(c=>(type==='all'||c.type===type)&&(c.name.toLowerCase().includes(q)||label(c.type).toLowerCase().includes(q)||Object.values(c.properties).some(x=>String(x).toLowerCase().includes(q))));
-   $('component-rows').innerHTML=components.length?components.slice(0,500).map(c=>`<tr data-id="${html(c.id)}" tabindex="0" role="button" aria-label="Explore ${html(c.name)}"><td>${html(c.name)}</td><td><span class="type-chip">${html(label(c.type))}</span></td><td>${html(c.description||Object.entries(c.properties).slice(0,2).map(([k,v])=>`${k}: ${v}`).join(' · ')||'—')}</td><td><span class="arrow-link">↗</span></td></tr>`).join(''):`<tr><td colspan="4" class="empty-state">${m?'No components match your filters.':'No solution loaded yet. Try the sample to start exploring.'}</td></tr>`;
+   const components=(m?.components||[]).filter(c=>(type==='all'||c.type===type)&&(coverage==='all'||(c.coverage||'inspected')===coverage)&&(c.name.toLowerCase().includes(q)||label(c.type).toLowerCase().includes(q)||Object.values(c.properties).some(x=>String(x).toLowerCase().includes(q))));
+   $('component-rows').innerHTML=components.length?components.slice(0,500).map(c=>`<tr data-id="${html(c.id)}" tabindex="0" role="button" aria-label="Explore ${html(c.name)}"><td>${html(c.name)}</td><td><span class="type-chip">${html(label(c.type))}</span></td><td><span class="coverage-tag ${html(c.coverage||'inspected')}">${html((SolutionCore.COVERAGE?.[c.coverage]||'Inspected metadata'))}</span></td><td>${html(c.description||Object.entries(c.properties).slice(0,2).map(([k,v])=>`${k}: ${v}`).join(' · ')||'—')}</td><td><span class="arrow-link">↗</span></td></tr>`).join(''):`<tr><td colspan="5" class="empty-state">${m?'No components match your filters.':'No solution loaded yet. Try the sample to start exploring.'}</td></tr>`;
    $('shown-components').textContent=`Showing ${Math.min(components.length,500)} of ${m?.components.length||0} components${components.length>500?' (first 500 matches)':''}`;
    for(const tr of $('component-rows').querySelectorAll('tr[data-id]')){tr.addEventListener('click',()=>showComponent(tr.dataset.id));tr.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();showComponent(tr.dataset.id);}});}
+ }
+ function renderDependencies(){
+   const m=state.a,edges=m?.dependencies||[];
+   $('dependency-summary').textContent=m?(edges.length+' declared missing dependency reference(s) · '+(m.coverage?.unsupported||0)+' unmapped component(s). Only manifest declarations are shown.'):'Load a solution to inspect its dependency declarations.';
+   $('dependency-rows').innerHTML=edges.length?edges.slice(0,150).map(e=>`<tr><td>${html(e.dependent||'Unspecified')}</td><td>${html(e.required)}</td><td>Solution manifest (missing dependency)</td></tr>`).join(''):`<tr><td colspan="3" class="empty-state">${m?'No declared missing dependencies detected. This does not prove the solution has no external dependencies.':'No solution loaded yet.'}</td></tr>`;
  }
  function svgToMermaid(m,mode){
    const safe=s=>String(s||'').replace(/["\r\n]/g,' ').slice(0,100);
@@ -134,7 +141,8 @@
  $('primary-file').addEventListener('change',e=>handle(e.target.files?.[0],'a'));$('compare-file').addEventListener('change',e=>handle(e.target.files?.[0],'b'));
  bindDrop('primary-drop','a');bindDrop('compare-drop','b');
  $('clear-all').addEventListener('click',()=>{state.a=null;state.b=null;state.diff=[];$('primary-file').value='';$('compare-file').value='';$('primary-label').textContent='No file selected';$('compare-label').textContent='No comparison loaded';status('Workspace cleared. No solution files are retained.');render();});
- $('component-search').addEventListener('input',renderInventory);$('type-filter').addEventListener('change',renderInventory);
+ $('type-filter').innerHTML='<option value="all">All component types</option>'+SolutionCore.TYPES.map(t=>`<option value="${html(t)}">${html(label(t))}</option>`).join('');
+ $('component-search').addEventListener('input',renderInventory);$('type-filter').addEventListener('change',renderInventory);$('coverage-filter').addEventListener('change',renderInventory);
  $('diff-search').addEventListener('input',renderDiff);$('diff-filter').addEventListener('change',renderDiff);
  for(const tab of document.querySelectorAll('.diagram-tab'))tab.addEventListener('click',()=>{state.diagram=tab.dataset.diagram;renderDiagram();});
  $('swap-solutions').addEventListener('click',()=>{if(!state.a||!state.b)return;[state.a,state.b]=[state.b,state.a];$('primary-label').textContent=state.a.info.filename||state.a.info.name||'Baseline';$('compare-label').textContent=state.b.info.filename||state.b.info.name||'Newer';status('Comparison direction reversed. A is now the baseline.');render();});

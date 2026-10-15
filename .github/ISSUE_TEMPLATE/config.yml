@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Microsoft Power Platform product support
+    url: https://learn.microsoft.com/power-platform/admin/get-help-support
+    about: For platform incidents, licensing or production environment problems unrelated to the Explorer.

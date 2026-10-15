@@ -1,0 +1,52 @@
+name: Report a component or parsing issue
+description: Report a missing Dataverse component, incorrect metadata, broken diagram or privacy problem.
+title: "[Explorer bug] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve Mightora Solution Explorer.
+        **Do not attach customer solution ZIPs, unredacted XML/JSON, secrets, tokens, IDs or personal information.**
+        If an example is essential, construct a minimal fictional reproduction.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Affected feature
+      options:
+        - Component inventory / manifest detection
+        - Plug-ins / custom APIs / PCF
+        - Security roles / permissions
+        - Business rules / BPF / flows
+        - Tables / choices / relationships
+        - Power Pages / Copilot Studio / AI
+        - Architecture diagrams / dependencies
+        - Version comparison
+        - Offline edition
+        - Branding / accessibility
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: describe
+    attributes:
+      label: What went wrong?
+      placeholder: Describe what appeared and what you expected.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce (without confidential data)
+      placeholder: "1. Open the sample or a synthetic ZIP...\n2. Select ...\n3. Observe ..."
+    validations:
+      required: true
+  - type: input
+    id: platform
+    attributes:
+      label: Browser / export format
+      placeholder: "e.g. Edge 145 / managed Dataverse solution export"
+  - type: textarea
+    id: example
+    attributes:
+      label: Optional anonymised metadata snippet
+      description: Only paste fictional, minimal metadata that you have checked contains no sensitive information.
