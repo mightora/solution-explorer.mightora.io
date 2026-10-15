@@ -120,3 +120,14 @@ test('offline core can initialise object explorer using only its bundled metadat
  assert.equal(typeof context.SolutionObjectExplorer.group,'function');
  assert.ok(sample.has('customizations.xml'));
 });
+
+test('online and offline releases bundle both editable Office report engines in the right order',()=>{
+ const online=fs.readFileSync(path.join(dir,'index.html'),'utf8');
+ const offline=fs.readFileSync(path.join(dir,'downloads/solution-explorer-offline.html'),'utf8');
+ for(const html of [online,offline])for(const marker of ['id="report-builder"','id="report-mode"','id="report-export-docx"','id="report-export-pptx"'])
+   assert.ok(html.includes(marker),marker);
+ assert.ok(offline.includes('root.SolutionReports='));
+ assert.ok(offline.includes('root.SolutionOffice='));
+ assert.ok(offline.includes('Editable PowerPoint report'))
+ for(const f of ['src/report-core.js','src/office-export.js','src/report-ui.js'])assert.ok(fs.existsSync(path.join(dir,f)));
+});

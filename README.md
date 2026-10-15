@@ -91,3 +91,9 @@ The **Component showcase · full architecture** package is a fictional test case
 ## Object hierarchy browser
 
 Expand every discovered component family in the **Object Explorer**. Select an object to inspect allowlisted attributes, contained subobjects extracted from available XML, related components and its inspection coverage. Supports search, inspection-level filtering, paging through large families, keyboard-accessible disclosure controls, and per-object JSON export. XML/source code, environment variable values, credentials and full action inputs are not exported. The detail hierarchy has a per-component safety limit of 160 nodes and a total budget of 6,000 nodes; metadata not present in an export remains visibly unavailable. This functionality also works offline.
+
+## Editable technical report exports (.docx and .pptx)
+
+Solution Explorer supports client-side Microsoft Word and PowerPoint reports in the live and fully offline application. A single solution produces a solution architecture report with component inventory, data dictionary (tables/columns), relationship model, integrations, automation, security and known dependencies. A/B comparison produces a change-impact report with added, removed, changed, unchanged components, property-level differences, data model changes, and indicative test/review flags. Word reports contain editable paragraphs and tables; relationship diagrams are represented by editable table layouts. PowerPoint reports use native editable Office text boxes, rectangular nodes and connectors rather than screenshots. Theme and font can be selected before download.
+
+Reports describe locally extracted metadata, not live environment state; unsupported formats and binary/secret contents are not included. Very large PPTX reports are bounded to 225 slides and some detail may require separate DOCX or CSV export. Do not assume a missing change in exported metadata guarantees unchanged runtime behaviour.

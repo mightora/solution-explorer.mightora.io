@@ -42,7 +42,7 @@
    finally{state.loading=false;$(id+'-picker').disabled=false;}
  }
  function bindDrop(elementId,slot){const el=$(elementId);for(const eventName of ['dragenter','dragover'])el.addEventListener(eventName,e=>{e.preventDefault();el.classList.add('dragging');});for(const eventName of ['dragleave','drop'])el.addEventListener(eventName,e=>{e.preventDefault();el.classList.remove('dragging');});el.addEventListener('drop',e=>{const file=e.dataTransfer?.files?.[0];if(file)handle(file,slot);});}
- function render(){renderOverview();renderInventory();renderDependencies();renderDiagram();renderDiff();renderManaged();renderWarnings();document.dispatchEvent(new CustomEvent('solution-workspace-change',{detail:{a:state.a}}));}
+ function render(){renderOverview();renderInventory();renderDependencies();renderDiagram();renderDiff();renderManaged();renderWarnings();document.dispatchEvent(new CustomEvent('solution-workspace-change',{detail:{a:state.a,b:state.b}}));}
  function renderOverview(){const m=state.a;
    $('solution-subtitle').textContent=m?`${m.info.name||m.info.filename||'Solution'} · v${m.info.version||'?'} · ${m.components.length.toLocaleString()} discovered components`:'Your architecture, one clear picture.';
    for(const type of ['table','column','relationship','flow','webresource','environment'])$('count-'+type).textContent=m?m.counts[type].toLocaleString():'—';
