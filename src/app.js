@@ -32,7 +32,7 @@
      files.set(path,contents);
    }
    if(!files.size)throw Error('No supported metadata files were found inside the ZIP.');
-   const model=SolutionCore.parseSolution(files,checksums);return {...model,info:{...model.info,filename:file.name}};
+   const model=SolutionCore.parseSolution(files,checksums);model.flowDetails=SolutionFlowExplorer.collect(files);return {...model,info:{...model.info,filename:file.name}};
  }
  async function handle(file,slot){
    if(!file||state.loading)return;state.loading=true;status(`Reading ${file.name} locally…`);
@@ -42,7 +42,7 @@
    finally{state.loading=false;$(id+'-picker').disabled=false;}
  }
  function bindDrop(elementId,slot){const el=$(elementId);for(const eventName of ['dragenter','dragover'])el.addEventListener(eventName,e=>{e.preventDefault();el.classList.add('dragging');});for(const eventName of ['dragleave','drop'])el.addEventListener(eventName,e=>{e.preventDefault();el.classList.remove('dragging');});el.addEventListener('drop',e=>{const file=e.dataTransfer?.files?.[0];if(file)handle(file,slot);});}
- function render(){renderOverview();renderInventory();renderDiagram();renderDiff();renderManaged();renderWarnings();}
+ function render(){renderOverview();renderInventory();renderDiagram();renderDiff();renderManaged();renderWarnings();document.dispatchEvent(new CustomEvent('solution-workspace-change',{detail:{a:state.a}}));}
  function renderOverview(){const m=state.a;
    $('solution-subtitle').textContent=m?`${m.info.name||m.info.filename||'Solution'} · v${m.info.version||'?'} · ${m.components.length.toLocaleString()} discovered components`:'Your architecture, one clear picture.';
    for(const type of ['table','column','relationship','flow','webresource','environment'])$('count-'+type).textContent=m?m.counts[type].toLocaleString():'—';
