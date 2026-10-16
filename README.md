@@ -113,3 +113,7 @@ Word uses editable table-based structural diagrams with explicit edge inventorie
 ## Model-driven app / Dataverse environment edition
 
 Download [`solution-explorer.html`](https://solution-explorer.mightora.io/dataverse/solution-explorer.html) as a single self-contained Webpage (HTML) web resource or [`solution-explorer-Dataverse.zip`](https://solution-explorer.mightora.io/downloads/solution-explorer-Dataverse.zip) for installation files. In the app, the signed-in user can enumerate installed environment solutions and open unmanaged solutions using the supported Dataverse `ExportSolution` action, passing the exported ZIP into the existing browser parser without creating an external backend. For installed managed/Default solutions, Microsoft forbids export; the edition instead displays a clearly incomplete component-reference inventory from `solutioncomponents`. Compare two slots or import local ZIPs as before. Installation and security: [Dataverse README](dataverse/README.md).
+
+## Persistent navigation
+
+The main Mightora header and horizontal section menu remain visible while scrolling the public and offline editions. The section bar stays immediately beneath the shared header rather than covering it. A small local-only runtime measures their actual heights on resize to ensure hash links and keyboard focus do not conceal section headings. Mobile users can swipe or horizontally scroll the section bar. Inside the model-driven Dataverse web resource, the compact dark topbar is sticky; its links remain accessible on narrow screens.

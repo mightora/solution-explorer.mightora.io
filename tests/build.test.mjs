@@ -160,3 +160,15 @@ test('expanded diagram modules are present in online and offline Office report r
  for(const term of ['api.layout=layout','report.visuals','office.docx=docx','office.pptx=pptx'])assert.ok(offline.includes(term));
  for(const file of ['src/flow-layout.js','src/report-visuals.js','src/office-diagrams.js'])assert.ok(fs.existsSync(path.join(dir,file)));
 });
+
+test('the online, offline and model-driven builds preserve persistent navigation',()=>{
+ const online=fs.readFileSync(path.join(dir,'index.html'),'utf8');
+ const offline=fs.readFileSync(path.join(dir,'downloads/solution-explorer-offline.html'),'utf8');
+ const embedded=fs.readFileSync(path.join(dir,'dataverse/solution-explorer.html'),'utf8');
+ assert.match(online,/src\/navigation\.js/);
+ assert.match(offline,/--mightora-sticky-header-height/);
+ assert.match(offline,/--mightora-sticky-clearance/);
+ assert.match(embedded,/--mightora-dataverse-topbar-height/);
+ assert.match(embedded,/position:sticky/);
+ assert.match(embedded,/navigation\.js|function measure\(\)/);
+});

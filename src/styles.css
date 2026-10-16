@@ -160,3 +160,42 @@ dialog{border:1px solid #dfe3ec;border-radius:16px;box-shadow:0 35px 110px #1320
 .flow-map [data-flow-step]:focus-visible{outline:3px solid var(--fb-accent);outline-offset:2px}
 @media (max-width:750px){.flow-map svg{min-width:900px}}
 @media (prefers-reduced-motion:reduce){.flow-map [data-flow-step] rect:first-child{transition:none}}
+
+/* Persistent navigation: keep the full Mightora header and the section menu visible.
+   Heights are measured by navigation.js because the shared header and mobile layouts
+   differ across online, offline and model-driven editions. */
+:root{
+  --mightora-sticky-header-height:60px;
+  --mightora-sticky-quicknav-height:48px;
+  --mightora-sticky-clearance:calc(var(--mightora-sticky-header-height) + var(--mightora-sticky-quicknav-height) + 16px);
+}
+mightora-header{
+  position:sticky;
+  top:0;
+  z-index:110;
+}
+.quick-jump-nav{
+  position:sticky;
+  top:var(--mightora-sticky-header-height);
+  z-index:100;
+  min-height:48px;
+  box-shadow:0 3px 10px rgba(21,32,58,.06);
+  overscroll-behavior-x:contain;
+  -webkit-overflow-scrolling:touch;
+  scroll-padding-inline:18px;
+}
+.quick-jump-nav a{
+  display:inline-flex;
+  align-items:center;
+  min-height:44px;
+  flex-shrink:0;
+}
+html:not([data-dataverse="true"]){scroll-padding-top:var(--mightora-sticky-clearance)}
+html:not([data-dataverse="true"]) section[id],
+html:not([data-dataverse="true"]) main [id]:target{
+  scroll-margin-top:var(--mightora-sticky-clearance);
+}
+@media(max-width:750px){
+  .quick-jump-nav{justify-content:flex-start;gap:14px;padding-inline:12px}
+  .quick-jump-nav a{padding-inline:3px}
+}

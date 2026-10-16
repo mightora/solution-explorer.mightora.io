@@ -24,3 +24,27 @@ html[data-dataverse="true"] #workspace{padding-top:26px}html[data-dataverse="tru
 :where(a,button,input,select,textarea,[tabindex]):focus-visible{outline:3px solid #3ecabb!important;outline-offset:2px}
 @media(max-width:950px){.dv-picker-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.dv-picker-actions{grid-column:1/-1}}
 @media(max-width:600px){.dv-picker-grid{grid-template-columns:1fr}.dv-heading{display:block}.dv-connection-pill{display:inline-block;margin-top:12px}.dv-nav{width:100%}.dv-bottom{padding:18px}.dv-topbar{padding:12px 16px}.dv-brand-img{width:125px}.dv-product{font-size:12px}}
+/* The embedded edition has one compact, persistent menu rather than the public
+   two-tier header. Avoid covering anchor targets as the mobile menu wraps. */
+html[data-dataverse="true"] .dv-topbar{
+  position:sticky;
+  top:0;
+  z-index:120;
+  box-shadow:0 3px 14px rgba(9,20,38,.17);
+}
+html[data-dataverse="true"]{
+  scroll-padding-top:calc(var(--mightora-dataverse-topbar-height, 64px) + 16px);
+}
+html[data-dataverse="true"] section[id],
+html[data-dataverse="true"] main [id]:target{
+  scroll-margin-top:calc(var(--mightora-dataverse-topbar-height, 64px) + 16px);
+}
+html[data-dataverse="true"] .dv-nav a:focus-visible{
+  outline:3px solid #78d4c4;
+  outline-offset:2px;
+}
+@media(max-width:700px){
+ html[data-dataverse="true"] .dv-topbar{gap:8px;padding:10px 14px}
+ html[data-dataverse="true"] .dv-nav{flex-wrap:nowrap;width:100%;overflow-x:auto;overscroll-behavior-x:contain;padding-bottom:4px}
+ html[data-dataverse="true"] .dv-nav a{flex-shrink:0;min-height:40px;display:inline-flex;align-items:center}
+}
