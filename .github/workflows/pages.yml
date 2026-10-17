@@ -49,6 +49,10 @@ jobs:
             --output assets/footer-tweed.png || rm -f assets/footer-tweed.png
       - run: npm run check
       - uses: actions/configure-pages@v6
+      - name: Bundle shared Mightora footer
+        uses: mightora/shared-ui/.github/actions/sync-footer@main
+        with:
+          output-directory: dist
       - uses: actions/upload-pages-artifact@v5
         with:
           path: dist
