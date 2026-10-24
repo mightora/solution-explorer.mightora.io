@@ -6,6 +6,7 @@ const table=(headers,rows)=>`<div class="table-scroller"><table class="component
 function formEvents(f,m){
  let out='<h4>JavaScript on form load</h4><p>Handlers appear in registration order. Disabled handlers remain visible. Code registered dynamically is outside this static view.</p>';
  out+=table(['Order','Function','Library','Enabled','Execution context','Parameters','Source'],(f.onLoad||[]).map(e=>[e.order,e.functionName,e.library,e.enabled?'Yes':'No',e.executionContext?'Passed':'Not passed',e.parameters,e.sourceAvailable?'Included below':'Not packaged']));
+ out+='<div class="exploration-actions">'+(f.onLoad||[]).filter(e=>e.sourceId).map(e=>`<button type="button" class="btn btn-outline small" data-code-component="${esc(e.sourceId)}" data-code-symbol="${esc(e.functionName)}">Find ${esc(e.functionName)} in source ↗</button>`).join('')+'</div>';
  for(const id of [...new Set((f.onLoad||[]).map(e=>e.sourceId).filter(Boolean))])for(const source of root.SolutionDetails.sourcesFor(m,id))out+=`<details class="component-code"><summary>${esc(source.path)} / full registered library</summary><pre class="webresource-source">${esc(source.text)}</pre></details>`;
  return out;
 }

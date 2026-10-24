@@ -141,3 +141,22 @@ Nested canvas extraction is limited to 4,000 entries per app, 40 MB total decomp
 Format references: [canvas source](https://learn.microsoft.com/power-apps/maker/canvas-apps/power-apps-yaml), [business-rule scopes](https://learn.microsoft.com/power-apps/maker/data-platform/data-platform-create-business-rule), [workflow process-trigger scope](https://learn.microsoft.com/power-apps/developer/data-platform/reference/entities/workflow#processtriggerscope), [form events](https://learn.microsoft.com/power-apps/developer/model-driven-apps/clientapi/events-forms-grids).
 
 Vendored `js-yaml` 4.3.2 (MIT) is used with its JSON schema for inert canvas source parsing and is also available to the shared footer. Attribution: [vendor/JS-YAML-LICENSE.md](vendor/JS-YAML-LICENSE.md). No runtime package download is required.
+
+## Trace, search and change-impact exploration
+
+The **Trace and search** section links each component to incoming (where used) and outgoing (requires) references. Expand up to eight hops, follow clickable graph nodes, navigate Back/Forward, or start a guided app, column or automation investigation. Object Explorer has a direct **Where used and impact** action. Form field labels link to column exploration; OnLoad registrations can jump to static function/property definition candidates.
+
+Reference direction is **dependent → required component**. Evidence is kept separate:
+
+- **Declared dependency:** an explicit manifest MissingDependency record.
+- **Metadata reference:** form controls/libraries, saved-view columns/FetchXML, rule scope/fields, flow connection references and recognised registration properties.
+- **Reference found in source:** an exact exported name in packaged source, with a path and line number. This is static evidence, not proof of execution.
+- **Possible text match:** ambiguous column names, display names or unbound literals. These are excluded by default and can be included explicitly.
+
+Source search covers metadata, JavaScript, Power Fx, FetchXML and other packaged text. Results are paged in groups of 100 with full match counts. Select a location to see a line-numbered excerpt and linked component references, or download the complete original source. Code is never executed.
+
+Load solution B to compare the selected component's properties, extracted form/canvas/rule structure or corresponding source path side by side. Small comparisons align inserted/deleted lines. Large comparisons disclose positional fallback or a comparison size limit. Missing components/source paths are stated explicitly.
+
+Export the current exploration graph as SVG or JSON, or generate an editable Word/PowerPoint review with reference evidence, discovered impact paths and a suggested verification checklist. Full and individual technical reports also include reference inventories. These are review prompts rather than verified breaking-change predictions.
+
+Processing remains in memory and works from the same maintained online, offline and Dataverse code. Graph scanning is bounded at 32 million source characters and 50,000 distinct evidence edges; coverage warnings identify partial scans. The on-screen graph displays up to 60 nodes, while SVG/JSON exports contain the complete selected graph within those extraction budgets. Each edge retains up to eight representative locations and an exact count of all scanned occurrences. Missing/dynamic definitions remain outside the static analysis.

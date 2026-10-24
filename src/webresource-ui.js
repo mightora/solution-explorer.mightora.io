@@ -39,6 +39,8 @@
    if(r.size>1024*1024&&asText){output.textContent='Source exceeds the 1 MB on-screen reading limit. Use Download original file to inspect it locally.';return;}
    if(r.size>8*1024*1024&&mime){output.textContent='Image exceeds the 8 MB preview limit. You can still download the original.';return;}
    if(asText){const content=await provider.read(r,'string');if(serial!==requestId)return;
+    model.componentSources=model.componentSources||Object.create(null);const previous=model.componentSources[r.id]||[];
+    if(!previous.some(s=>s.path===r.path&&s.text===content)){model.componentSources[r.id]=[{path:r.path,language:r.kind,text:content,kind:'Web resource source'}];root.SolutionExploration?.invalidate(model);document.dispatchEvent(new CustomEvent('component-source-change',{detail:{model,id:r.id}}));}
     output.replaceChildren();const hint=document.createElement('p');hint.className='webresource-note';hint.textContent='Read-only source · never executed or rendered as active HTML';
     const pre=document.createElement('pre');pre.className='webresource-source';pre.textContent=content;output.append(hint,pre);
    }else if(mime){const raw=await provider.read(r,'uint8array');if(serial!==requestId)return;

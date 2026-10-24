@@ -61,9 +61,9 @@ mightora-footer{display:block;background:#111827;color:rgba(255,255,255,.75);pad
 `;
 const offlineCsp=`<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data: blob:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'none'; font-src data:; object-src 'none'; base-uri 'none'; form-action 'none'">`;
 let offline=page.replace('<html lang="en-GB">','<html lang="en-GB" data-offline="true">').replace('<meta name="theme-color"',offlineCsp+'\n<meta name="theme-color"');
-offline=offline.replace(/<!-- ONLINE_STYLES -->[\s\S]*?<!-- END_ONLINE_STYLES -->/,`<style>${styles}</style>\n<style>${offlineAuthorStyles}</style>`);
+offline=offline.replace(/<!-- ONLINE_STYLES -->[\s\S]*?<!-- END_ONLINE_STYLES -->/,()=>`<style>${styles}</style>\n<style>${offlineAuthorStyles}</style>`);
 offline=offline.replace(/<!-- HEADER_FOOTER_PATCH -->[\s\S]*?<!-- END_HEADER_FOOTER_PATCH -->/,'');
-offline=offline.replace(/<!-- ONLINE_SCRIPTS -->[\s\S]*?<!-- END_ONLINE_SCRIPTS -->/,`<script>${js}</script>`);
+offline=offline.replace(/<!-- ONLINE_SCRIPTS -->[\s\S]*?<!-- END_ONLINE_SCRIPTS -->/,()=>`<script>${js}</script>`);
 // Embed the exact approved Mightora header asset when it has been retrieved at build time.
 // The CI workflow retrieves this public logo from the upstream Mightora source.
 const brandFile=path.join(root,'assets/mightora-logo.png');
@@ -123,7 +123,7 @@ dv=dv.replace(/<meta name="description"[^>]*>/i,'<meta name="description" conten
 const embedded=`<script>${js}</script>`;
 if(!dv.includes(embedded))throw Error('Cannot locate self-contained Explorer runtime for Dataverse edition.');
 dv=dv.replace(embedded,()=>`<script>${js}\n;\n${dvRuntime}</script>`);
-const dvHeader=`<header class="dv-topbar"><div class="dv-topbrand"><img class="dv-brand-img" alt="Mightora" src="${brandLogo}"><span class="dv-product">Solution Explorer / Dataverse</span></div><nav class="dv-nav" aria-label="Workspace sections"><a href="#dataverse-environment">Environment</a><a href="#workspace">ZIP files</a><a href="#webresources">Web resources</a><a href="#relationship-map">Full ERD</a><a href="#component-visuals">Apps and rules</a><a href="#object-browser">Objects</a><a href="#form-preview">Forms</a><a href="#flow-explorer">Flows</a><a href="#report-builder">Reports</a><a href="#comparison">Compare</a></nav></header>`;
+const dvHeader=`<header class="dv-topbar"><div class="dv-topbrand"><img class="dv-brand-img" alt="Mightora" src="${brandLogo}"><span class="dv-product">Solution Explorer / Dataverse</span></div><nav class="dv-nav" aria-label="Workspace sections"><a href="#dataverse-environment">Environment</a><a href="#workspace">ZIP files</a><a href="#webresources">Web resources</a><a href="#relationship-map">Full ERD</a><a href="#component-visuals">Apps and rules</a><a href="#dependency-explorer">Trace and search</a><a href="#object-browser">Objects</a><a href="#form-preview">Forms</a><a href="#flow-explorer">Flows</a><a href="#report-builder">Reports</a><a href="#comparison">Compare</a></nav></header>`;
 const dvFooter='<footer class="dv-bottom"><strong>Mightora Solution Explorer</strong><span>Connected to the current Dataverse environment · No data sent to Mightora</span><a href="https://mightora.io" target="_blank" rel="noopener noreferrer">Mightora</a><a href="https://github.com/mightora/solution-explorer.mightora.io" target="_blank" rel="noopener noreferrer">Source</a><a href="https://github.com/mightora/solution-explorer.mightora.io/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">MIT licence</a></footer>';
 dv=dv.replace('<body>','<body>'+dvHeader).replace('<section id="workspace"',dvPanel+'\n<section id="workspace"');
 dv=dv.replace('</body>',dvFooter+'</body>');

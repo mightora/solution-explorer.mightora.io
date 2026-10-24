@@ -28,7 +28,7 @@
     for(const e of entityNodes){
       const eName=attr(e,'Name','LogicalName')||readNodeName(children(e,'Name')[0])||direct(e,'Name')||deep(e,'LogicalName')||attr(children(e,'Name')[0],'OriginalName')||'unknown_table';
       const label=deep(e,'DisplayName') || eName;
-      const flags={displayName:label, ownership:deep(e,'OwnershipType'), primaryId:deep(e,'PrimaryIdAttribute'), primaryName:deep(e,'PrimaryNameAttribute')};
+      const flags={displayName:label, ownership:deep(e,'OwnershipType'), primaryId:deep(e,'PrimaryIdAttribute'), primaryName:deep(e,'PrimaryNameAttribute'),entitySetName:deep(e,'EntitySetName')};
       add(map,'table',eName,flags,label);
       const ats=descendants(e,'attribute').filter(a => children(a,'PhysicalName').length || attr(a,'PhysicalName','LogicalName','Name') || children(a,'Name').length);
       for(const a of ats){
