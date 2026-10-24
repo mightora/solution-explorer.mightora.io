@@ -1,5 +1,11 @@
 import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs';import path from 'node:path';import vm from 'node:vm';import {createRequire} from 'node:module';
 const require=createRequire(import.meta.url),JSZip=require('../vendor/jszip.cjs');const dir=path.resolve(import.meta.dirname,'../dist');
+test('full ERD and individual editable component documentation ship in every edition',()=>{
+ const online=fs.readFileSync(path.join(dir,'index.html'),'utf8'),offline=fs.readFileSync(path.join(dir,'downloads/solution-explorer-offline.html'),'utf8'),dataverse=fs.readFileSync(path.join(dir,'dataverse/solution-explorer.html'),'utf8');
+ for(const content of [online,offline,dataverse])for(const id of ['component-visuals','visual-component-docx','visual-component-pptx','visual-rule-scope','relationship-docx','relationship-pptx','relationship-mermaid','erd-keys-only'])assert.ok(content.includes('id="'+id+'"'),id);
+ for(const name of ['erd','solution-details','component-reports','office-components','component-ui','visual-components-ui']){assert.ok(fs.existsSync(path.join(dir,'src',name+'.js')));assert.ok(offline.includes(fs.readFileSync(path.join(dir,'src',name+'.js'),'utf8').replaceAll('</script','<\\/script')));}
+ assert.ok(fs.existsSync(path.join(dir,'vendor/JS-YAML-LICENSE.md')));
+});
 test('standalone HTML has all runtime source and restrictive CSP',()=>{
  const offline=fs.readFileSync(path.join(dir,'downloads/solution-explorer-offline.html'),'utf8');
  assert.ok(offline.includes('connect-src &#39;none&#39;')||offline.includes("connect-src 'none'"));
@@ -171,4 +177,16 @@ test('the online, offline and model-driven builds preserve persistent navigation
  assert.match(embedded,/--mightora-dataverse-topbar-height/);
  assert.match(embedded,/position:sticky/);
  assert.match(embedded,/navigation\.js|function measure\(\)/);
+});
+
+test('full web resource inspector and complete relationship map are bundled everywhere',()=>{
+ const online=fs.readFileSync(path.join(dir,'index.html'),'utf8');
+ const offline=fs.readFileSync(path.join(dir,'downloads/solution-explorer-offline.html'),'utf8');
+ const dataverse=fs.readFileSync(path.join(dir,'dataverse/solution-explorer.html'),'utf8');
+ for(const content of [online,offline,dataverse]){
+  for(const id of ['webresource-list','webresource-inspector','relationship-stage','relationship-rows','relationship-svg','relationship-csv'])assert.ok(content.includes('id="'+id+'"'),id);
+  assert.ok(content.includes('SolutionRelationshipMap')||content.includes('src/relationship-map.js'));
+  assert.ok(content.includes('SolutionWebResources')||content.includes('src/webresources.js'));
+ }
+ for(const name of ['webresource-ui.js','relationship-ui.js','webresources.js','relationship-map.js'])assert.ok(fs.existsSync(path.join(dir,'src',name)));
 });

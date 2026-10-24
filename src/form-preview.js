@@ -2,7 +2,8 @@
  * No scripts, field values, HTML, business data or raw FormXML are retained. */
 (function(root){
 'use strict';
-const MAX_FORMS=100,MAX_TABS=30,MAX_SECTIONS=120,MAX_FIELDS=900;
+// The archive/text budgets already bound input size. Do not silently drop forms or controls.
+const MAX_FORMS=Infinity,MAX_TABS=Infinity,MAX_SECTIONS=Infinity,MAX_FIELDS=Infinity;
 const safe=s=>String(s??'').replace(/[\r\n\t]/g,' ').replace(/\s+/g,' ').trim().slice(0,170);
 const tag=n=>(n?.localName||n?.nodeName||'').toLowerCase();
 const kids=(n,t)=>Array.from(n?.childNodes||[]).filter(x=>x.nodeType===1&&(!t||tag(x)===t.toLowerCase()));

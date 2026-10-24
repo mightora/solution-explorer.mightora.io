@@ -3,6 +3,7 @@
  const $=id=>document.getElementById(id);
  const html=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const state={a:null,b:null,diagram:'data',diff:[],componentMap:new Map(),loading:false};
+ const archives={a:null,b:null};
  const MAX_ZIP=75*1024*1024,MAX_UNPACKED=130*1024*1024,MAX_FILES=4000,MAX_ENTRY=20*1024*1024;
  const label=type=>SolutionCore.LABELS[type]||type;
  function download(name,content,mime='text/plain'){const blob=content instanceof Blob?content:new Blob([content],{type:mime});const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1200);}
@@ -23,7 +24,7 @@
    for(const e of entries){
      const path=e.name.replace(/\\/g,'/');
      checksums.set(path,typeof e._data?.crc32==='number'?(e._data.crc32>>>0).toString(16).padStart(8,'0'):'');
-     if(!/\.(xml|json|yml|yaml)$/i.test(path))continue;
+     if(!/\.(xml|json|yml|yaml|xaml|js|mjs|ts|css|html?|svg|resx|xsl|txt|md)$/i.test(path))continue;
      const s=e._data?.uncompressedSize||0;
      if(s>MAX_ENTRY)continue;
      // XML and JSON are the only formats parsed. Other files never execute.
@@ -32,12 +33,16 @@
      files.set(path,contents);
    }
    if(!files.size)throw Error('No supported metadata files were found inside the ZIP.');
-   const model=SolutionCore.parseSolution(files,checksums);model.flowDetails=SolutionFlowExplorer.collect(files);const enriched=SolutionObjectExplorer.enrich(SolutionForms.enrich(model,files),files);return {...enriched,info:{...model.info,filename:file.name}};
+   const canvasWarnings=await SolutionDetails.unpackCanvas(zip,files);
+   const model=SolutionCore.parseSolution(files,checksums);model.flowDetails=SolutionFlowExplorer.collect(files);let enriched=SolutionObjectExplorer.enrich(SolutionForms.enrich(model,files),files);
+   const webResources=SolutionWebResources.catalog(enriched,entries.map(e=>({path:e.name.replace(/\\/g,'/'),size:e._data?.uncompressedSize??null})));
+   enriched=SolutionDetails.enrich({...enriched,webResources},files);enriched.warnings.push(...canvasWarnings);
+   return {model:{...enriched,info:{...model.info,filename:file.name}},archive:zip};
  }
  async function handle(file,slot){
    if(!file||state.loading)return;state.loading=true;status(`Reading ${file.name} locally…`);
    const id=slot==='a'?'primary':'compare';$(id+'-picker').disabled=true;
-   try{const model=await readZip(file);state[slot]=model;$(id+'-label').textContent=file.name;status(`Loaded ${file.name} — ${model.components.length} components found.`);render();return model;}
+   try{const {model,archive}=await readZip(file);state[slot]=model;archives[slot]=archive;$(id+'-label').textContent=file.name;status(`Loaded ${file.name} — ${model.components.length} components found.`);render();return model;}
    catch(e){status(e.message||'Could not read the solution ZIP.',true);}
    finally{state.loading=false;$(id+'-picker').disabled=false;}
  }
@@ -130,22 +135,22 @@
  }
  function escapeCSV(s){const value=String(s??'');return '"'+( /^[=+\-@\t\r]/.test(value)?"'":'')+value.replace(/"/g,'""')+'"';}
  function csv(rows){return rows.map(r=>r.map(escapeCSV).join(',')).join('\r\n')+'\r\n';}
- function selectSample(id,slot){const m=SolutionSamples.load(id);state[slot]=m;$(slot==='a'?'primary-label':'compare-label').textContent=m.info.filename;status('Loaded '+m.info.filename+' — fictional teaching package.');render();}
+ function selectSample(id,slot){const m=SolutionSamples.load(id);state[slot]=m;archives[slot]=null;$(slot==='a'?'primary-label':'compare-label').textContent=m.info.filename;status('Loaded '+m.info.filename+' — fictional teaching package.');render();}
  const gallery=$('samples-gallery');gallery.innerHTML=SolutionSamples.catalog.map(s=>`<article class="panel sample-card"><span class="section-kicker">${html(s.sector)}</span><h3>${html(s.title)}</h3><p>${html(s.description)}</p><span class="sample-version">v${html(s.version)}${s.managed?' · Managed':''}</span><div class="sample-actions"><button class="btn btn-outline small" data-sample-load="${html(s.id)}">Explore ↗</button><button class="btn btn-outline small" data-sample-b="${html(s.id)}">Use as B ⇄</button><button class="text-button" data-sample-download="${html(s.id)}">ZIP ↓</button></div></article>`).join('');
  for(const b of gallery.querySelectorAll('[data-sample-load]'))b.addEventListener('click',()=>{selectSample(b.dataset.sampleLoad,'a');$('results').scrollIntoView({behavior:'smooth'});});
  for(const b of gallery.querySelectorAll('[data-sample-b]'))b.addEventListener('click',()=>{selectSample(b.dataset.sampleB,'b');$('comparison').scrollIntoView({behavior:'smooth'});});
  for(const b of gallery.querySelectorAll('[data-sample-download]'))b.addEventListener('click',async()=>{const id=b.dataset.sampleDownload;b.disabled=true;try{const zip=new JSZip();for(const [path,body] of SolutionSamples.files(id))zip.file(path,body);const blob=await zip.generateAsync({type:'blob',compression:'DEFLATE'});download(`${id}-demo.zip`,blob,'application/zip');status('Downloaded fictional sample: '+id+'.');}catch(e){status('Could not create sample ZIP: '+e.message,true);}finally{b.disabled=false;}});
- $('try-demo').addEventListener('click' ,()=>{state.a=SolutionSamples.demo(1);state.b=null;$('primary-label').textContent='Synthetic demo · v1.0';$('compare-label').textContent='No comparison loaded';status('Loaded the synthetic demonstration solution.');render();$('workspace').scrollIntoView({behavior:'smooth'});});
- $('demo-pair').addEventListener('click',()=>{state.a=SolutionSamples.demo(1);state.b=SolutionSamples.demo(2);$('primary-label').textContent='Synthetic demo · v1.0';$('compare-label').textContent='Synthetic demo · v1.1';status('Demo comparison ready — synthetic solution versions 1.0 and 1.1.');render();$('comparison').scrollIntoView({behavior:'smooth'});});
+ $('try-demo').addEventListener('click' ,()=>{state.a=SolutionSamples.demo(1);state.b=null;archives.a=null;archives.b=null;$('primary-label').textContent='Synthetic demo · v1.0';$('compare-label').textContent='No comparison loaded';status('Loaded the synthetic demonstration solution.');render();$('workspace').scrollIntoView({behavior:'smooth'});});
+ $('demo-pair').addEventListener('click',()=>{state.a=SolutionSamples.demo(1);state.b=SolutionSamples.demo(2);archives.a=null;archives.b=null;$('primary-label').textContent='Synthetic demo · v1.0';$('compare-label').textContent='Synthetic demo · v1.1';status('Demo comparison ready — synthetic solution versions 1.0 and 1.1.');render();$('comparison').scrollIntoView({behavior:'smooth'});});
  $('primary-picker').addEventListener('click',()=>$('primary-file').click());$('compare-picker').addEventListener('click',()=>$('compare-file').click());
  $('primary-file').addEventListener('change',e=>handle(e.target.files?.[0],'a'));$('compare-file').addEventListener('change',e=>handle(e.target.files?.[0],'b'));
  bindDrop('primary-drop','a');bindDrop('compare-drop','b');
- $('clear-all').addEventListener('click',()=>{state.a=null;state.b=null;state.diff=[];$('primary-file').value='';$('compare-file').value='';$('primary-label').textContent='No file selected';$('compare-label').textContent='No comparison loaded';status('Workspace cleared. No solution files are retained.');render();});
+ $('clear-all').addEventListener('click',()=>{state.a=null;state.b=null;archives.a=null;archives.b=null;state.diff=[];$('primary-file').value='';$('compare-file').value='';$('primary-label').textContent='No file selected';$('compare-label').textContent='No comparison loaded';status('Workspace cleared. No solution files are retained.');render();});
  $('type-filter').innerHTML='<option value="all">All component types</option>'+SolutionCore.TYPES.map(t=>`<option value="${html(t)}">${html(label(t))}</option>`).join('');
  $('component-search').addEventListener('input',renderInventory);$('type-filter').addEventListener('change',renderInventory);$('coverage-filter').addEventListener('change',renderInventory);
  $('diff-search').addEventListener('input',renderDiff);$('diff-filter').addEventListener('change',renderDiff);
  for(const tab of document.querySelectorAll('.diagram-tab'))tab.addEventListener('click',()=>{state.diagram=tab.dataset.diagram;renderDiagram();});
- $('swap-solutions').addEventListener('click',()=>{if(!state.a||!state.b)return;[state.a,state.b]=[state.b,state.a];$('primary-label').textContent=state.a.info.filename||state.a.info.name||'Baseline';$('compare-label').textContent=state.b.info.filename||state.b.info.name||'Newer';status('Comparison direction reversed. A is now the baseline.');render();});
+ $('swap-solutions').addEventListener('click',()=>{if(!state.a||!state.b)return;[state.a,state.b]=[state.b,state.a];[archives.a,archives.b]=[archives.b,archives.a];$('primary-label').textContent=state.a.info.filename||state.a.info.name||'Baseline';$('compare-label').textContent=state.b.info.filename||state.b.info.name||'Newer';status('Comparison direction reversed. A is now the baseline.');render();});
  $('download-recovery').addEventListener('click',()=>{if(!state.a)return;const m=state.a,a=SolutionCore.assessManaged(m);const out=['# Dataverse solution recovery assessment','',`Solution: ${m.info.name||'Unknown'}`,`Version: ${m.info.version||'Unknown'}`,`Managed: ${m.info.managed===null?'Unconfirmed':m.info.managed?'Yes':'No'}`,'','## Guidance',...a.steps.map((step,i)=>`${i+1}. ${step}`),'','## Discovered component inventory (not full source)',...m.components.map(c=>`- ${c.type}: ${c.name}`),'','## Important limitations','No managed-to-unmanaged conversion was performed. Do not modify the ZIP managed flag.','Official guidance: https://learn.microsoft.com/power-platform/alm/solution-packager-tool'];download('managed-solution-recovery.md',out.join('\n'),'text/markdown');});
  $('download-json').addEventListener('click',()=>{if(state.a)download('solution-inventory.json',JSON.stringify({...state.a,source:'Mightora Solution Explorer'},null,2),'application/json');});
  $('download-csv').addEventListener('click',()=>{if(state.a)download('solution-components.csv',csv([['Type','Name','Description','Properties'],...state.a.components.map(c=>[c.type,c.name,c.description,JSON.stringify(c.properties)])]),'text/csv');});
@@ -156,6 +161,36 @@
  $('close-dialog').addEventListener('click',()=>$('component-dialog').close());$('component-dialog').addEventListener('click',e=>{if(e.target===$('component-dialog'))$('component-dialog').close();});
  $('refresh-network').addEventListener('click',refreshNetwork);
  if(document.documentElement.dataset.offline==='true'){$('offline-banner').hidden=false;for(const id of ['offline-html-link','offline-zip-link']){const link=$(id);if(link)link.hidden=true;}}
+
+ // No untrusted resource is ever embedded in the DOM as active markup. Read the
+ // original file lazily from the local ZIP only on an explicit inspector action.
+ globalThis.MightoraResourceProvider={
+   async read(resource,format){
+     if(/^dataverse:[a-f\d-]{36}$/i.test(resource?.path||'')){
+       const api=globalThis.MightoraDataverseSolutions,client=api?.context();if(!client)throw Error('Signed-in Dataverse context is no longer available.');
+       if(format==='string'&&!SolutionWebResources.textResource(resource.name))throw Error('Source preview is unavailable for this file.');
+       if(format==='uint8array'&&!SolutionWebResources.imageMime(resource.name))throw Error('Raster preview is unavailable for this file.');
+       return api.readWebResource(client,resource.path.slice(10),format);
+     }
+     const entry=archives.a?.file(resource?.path||'');if(!entry||entry.dir)throw Error('Resource payload is not present in the selected solution ZIP.');
+     const size=entry._data?.uncompressedSize||0;
+     if(size>MAX_ENTRY)throw Error('Resource exceeds the 20 MB safety limit.');
+     if(format==='string'&&(size>1024*1024||!SolutionWebResources.textResource(resource.name)))throw Error('Source preview is unavailable for this file.');
+     if(format==='uint8array'&&(size>8*1024*1024||!SolutionWebResources.imageMime(resource.path)))throw Error('Raster preview is unavailable for this file.');
+     return entry.async(format);
+   },
+   async download(resource){let bytes;
+     if(/^dataverse:[a-f\d-]{36}$/i.test(resource?.path||'')){
+       const api=globalThis.MightoraDataverseSolutions,client=api?.context();if(!client)throw Error('Signed-in Dataverse context is no longer available.');
+       bytes=await api.readWebResource(client,resource.path.slice(10));
+     }else{
+       const entry=archives.a?.file(resource?.path||'');if(!entry||entry.dir)throw Error('Resource payload not found.');
+       if((entry._data?.uncompressedSize||0)>MAX_ENTRY)throw Error('Resource exceeds the ZIP safety limit.');bytes=await entry.async('uint8array');
+     }
+     const name=(resource.name.split('/').pop()||'web-resource').replace(/[^\w.()-]/g,'_').slice(0,160);
+     download(name,bytes,'application/octet-stream');
+   }
+ };
 
  // Reuse the exact existing ZIP parser and all its diagrams/reports from a Dataverse
  // web resource. These functions are only called after an explicit user action.
@@ -169,7 +204,7 @@
    loadModel(model,slot='a'){
      if(slot!=='a'&&slot!=='b')throw Error('Invalid workspace slot.');
      if(!model?.components||!model.info)throw Error('Invalid solution component metadata.');
-     state[slot]=model;
+     state[slot]=model;archives[slot]=null;
      $(slot==='a'?'primary-label':'compare-label').textContent=model.info.filename||model.info.name||'Live inventory';
      status('Loaded '+model.components.length+' discovered component references (metadata-only; not a ZIP).');
      render();return model;

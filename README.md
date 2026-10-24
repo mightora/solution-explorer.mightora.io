@@ -13,6 +13,8 @@ Live site (once deployed): https://solution-explorer.mightora.io
 
 - Drag and drop **managed or unmanaged Dataverse solution export ZIPs**.
 - Browse **tables, columns, relationships, cloud flows, classic workflows, web resources, environment variable definitions, connection references, apps, forms and views** where metadata is available.
+- Inspect **all web resources** in the ZIP inventory: search by name/type, see format and size, read packaged HTML/JavaScript/CSS/XML/JSON/SVG as inert source, preview PNG/JPEG/GIF/WebP images, and download original files. HTML/scripts/SVG are never executed. Resources that exist only as metadata are clearly labelled.
+- Explore the **complete mapped table-relationship graph**, including one-to-many, many-to-one and many-to-many links. Click a table to focus, search relationships, filter by relationship type, inspect unresolved endpoints, export an SVG of the visible map, or export **every discovered relationship** as CSV. Unlike the compact architecture summary, this view does not silently drop links after a fixed number.
 - Search and filter components, inspect properties, export inventories as **JSON or CSV**.
 - Produce self-contained **SVG** diagrams and **Mermaid** text for a data model, component landscape or flow integrations.
 - Load a second ZIP for **component-level change detection** (added, removed, changed, unchanged) and export a change report.
@@ -55,6 +57,8 @@ Then browse to http://localhost:8080. There are no runtime npm dependencies, bui
 
 All ZIP reading, XML/JSON parsing, diagram generation, comparison and export run in the current browser tab. No ZIP contents are sent to an application server. The online edition makes requests for Mightora shared UI and brand assets; the offline edition embeds its assets and blocks network access with a restrictive Content Security Policy. It deliberately excludes environment-variable values from the parsed model and exports. The in-page resource monitor is partial; verify requests independently with F12 → Network → Preserve log.
 
+Packaged textual web resources, canvas sources, FormXML and rule definitions are retained in memory for inspection and documentation. Component JSON and full solution JSON include these sources. Source text can itself contain confidential data or hardcoded credentials, so review exports before sharing. Environment-variable values remain excluded from the parsed metadata. The model-driven Dataverse edition additionally resolves web resource names associated with managed solution component IDs when the signed-in user has permission and retrieves source only on request through the same-origin Dataverse Web API. Other managed-solution components remain a partial reference inventory, not a full export.
+
 ZIPs are subject to size, entry count and decompressed-size limits; XML/JSON is parsed as data and never executed. See [LIMITATIONS.md](LIMITATIONS.md) for scope and caveats.
 
 ## Project layout
@@ -63,6 +67,10 @@ ZIPs are subject to size, entry count and decompressed-size limits; XML/JSON is 
 index.html                  Website and search-engine metadata
 src/parser.js               Dataverse XML/JSON extraction and comparison
 src/diagrams.js             Local SVG diagram generator
+src/relationship-map.js     Full relationship graph data and safe SVG rendering
+src/relationship-ui.js      Search, focus, map and all-links CSV controls
+src/webresources.js         Web resource file catalog and format classification
+src/webresource-ui.js       Inert source and safe image inspector
 src/samples.js              Synthetic demonstration solutions
 src/app.js                  Browser UI, ZIP ingestion and exports
 src/styles.css              Mightora-aligned responsive UI
@@ -84,19 +92,19 @@ The online site uses the official `mightora-author` and `mightora-footer` compon
 
 ## Power Automate Flow Explorer
 
-Upload a Dataverse solution ZIP to see the flow definitions in its `Workflows/*.json` files, or open a standalone exported flow JSON. The Flow Explorer maps triggers, actions, conditions, loops, scopes, switch cases, branch nesting, and explicit `runAfter` dependencies. Click nodes to inspect allowlisted metadata, then download SVG, Mermaid, or sanitized JSON. A branching demo is included. Everything runs in the browser and the same feature works offline. Sensitive parameter values, literal expressions, access tokens, and connection credentials are intentionally not retained or exported. Diagram traversal is capped at 250 steps and display at 140.
+Upload a Dataverse solution ZIP to see the flow definitions in its `Workflows/*.json` files, or open a standalone exported flow JSON. The Flow Explorer maps triggers, actions, conditions, loops, scopes, switch cases, branch nesting, and explicit `runAfter` dependencies. Click nodes to inspect allowlisted metadata, then download SVG, Mermaid, or sanitized JSON. A branching demo is included. Everything runs in the browser and the same feature works offline. The structural flow map omits sensitive literal values. Packaged automation source is separately available as editable text and may include literals that require review before sharing. Diagram traversal is capped at 250 steps and display at 140.
 
 The **Component showcase · full architecture** package is a fictional test case covering plug-ins, roles, choices, custom APIs, controls, integrations, Power Pages, Copilot topics, AI and missing dependencies. It is not importable into Dataverse.
 
 ## Object hierarchy browser
 
-Expand every discovered component family in the **Object Explorer**. Select an object to inspect allowlisted attributes, contained subobjects extracted from available XML, related components and its inspection coverage. Supports search, inspection-level filtering, paging through large families, keyboard-accessible disclosure controls, and per-object JSON export. XML/source code, environment variable values, credentials and full action inputs are not exported. The detail hierarchy has a per-component safety limit of 160 nodes and a total budget of 6,000 nodes; metadata not present in an export remains visibly unavailable. This functionality also works offline.
+Expand every discovered component family in the **Object Explorer**. Select an object to inspect allowlisted attributes, contained subobjects extracted from available XML, related components and its inspection coverage. Supports search, inspection-level filtering, paging through large families, keyboard-accessible disclosure controls, and per-object JSON export. Packaged source is available as inert text and in individual Word/PowerPoint/JSON exports. Environment-variable values remain excluded. The raw source of scripts and automation definitions can contain sensitive literals. The detail hierarchy has a per-component safety limit of 160 nodes and a total budget of 6,000 nodes; metadata not present in an export remains visibly unavailable. This functionality also works offline.
 
 ## Editable technical report exports (.docx and .pptx)
 
-Solution Explorer supports client-side Microsoft Word and PowerPoint reports in the live and fully offline application. A single solution produces a solution architecture report with component inventory, data dictionary (tables/columns), relationship model, integrations, automation, security and known dependencies. A/B comparison produces a change-impact report with added, removed, changed, unchanged components, property-level differences, data model changes, and indicative test/review flags. Word reports contain editable paragraphs and tables; relationship diagrams are represented by editable table layouts. PowerPoint reports use native editable Office text boxes, rectangular nodes and connectors rather than screenshots. Theme and font can be selected before download.
+Solution Explorer supports client-side Microsoft Word and PowerPoint reports in the live and fully offline application. A single solution produces a solution architecture report with component inventory, data dictionary (tables/columns), relationship model, integrations, automation, security and known dependencies. A/B comparison produces a change-impact report with added, removed, changed, unchanged components, property-level differences, data model changes, and indicative test/review flags. Word reports contain editable paragraphs and tables, plus native editable ERD drawing groups. Other architecture maps use editable structural tables. PowerPoint reports use native editable Office text boxes, rectangular nodes and connectors rather than screenshots. Theme and font can be selected before download.
 
-Reports describe locally extracted metadata, not live environment state; unsupported formats and binary/secret contents are not included. Very large PPTX reports are bounded to 225 slides and some detail may require separate DOCX or CSV export. Do not assume a missing change in exported metadata guarantees unchanged runtime behaviour.
+Reports describe locally extracted metadata, not live environment state. All extracted components and packaged textual sources are paginated without a silent row/slide cutoff. Large exports consume memory; use individual exports when appropriate. Binary assemblies are not decompiled. Do not assume a missing change in exported metadata guarantees unchanged runtime behaviour.
 
 ## Model-driven form preview
 
@@ -108,7 +116,7 @@ The single-solution and A→B change reports include **every available diagram f
 
 The online **Power Automate Flow Explorer** now uses a structured, branch-aware SVG: clearly labelled condition YES/NO and switch branches, nested scope guides, and solid connectors only for explicit runAfter dependencies. Trigger-entry links are visually distinct. Independent actions are not falsely shown as sequential.
 
-Word uses editable table-based structural diagrams with explicit edge inventories; PowerPoint uses native shapes and connectors. The underlying flow parser still limits each flow to 250 actions (and the interactive visual map to 140). The extended PowerPoint diagram pack has a 400-slide upper bound; on extremely large reports, a coverage notice is included, and users can use the full editable Word inventory. Binary definitions or absent metadata cannot be reconstructed.
+Word uses editable table-based structural diagrams with explicit edge inventories; PowerPoint uses native shapes and connectors. The underlying flow parser still limits each flow to 250 actions (and the interactive visual map to 140). The full ERD includes every exported table, isolated tables, columns and named external endpoints. Each relationship has a separate editable diagram page, so edges crossing overview pages are preserved. Binary definitions or absent metadata cannot be reconstructed.
 
 ## Model-driven app / Dataverse environment edition
 
@@ -117,3 +125,19 @@ Download [`solution-explorer.html`](https://solution-explorer.mightora.io/datave
 ## Persistent navigation
 
 The main Mightora header and horizontal section menu remain visible while scrolling the public and offline editions. The section bar stays immediately beneath the shared header rather than covering it. A small local-only runtime measures their actual heights on resize to ensure hash links and keyboard focus do not conceal section headings. Mobile users can swipe or horizontally scroll the section bar. Inside the model-driven Dataverse web resource, the compact dark topbar is sticky; its links remain accessible on narrow screens.
+
+## Component documentation and full ERD
+
+Every object in **Object explorer** has separate Word, PowerPoint and JSON downloads. **Apps and rules** provides direct access to canvas apps, forms, saved views and business rules, including scope filtering. Complete solution and comparison reports include detailed component sections and source from both comparison sides.
+
+- **Full ERD:** all packaged tables and columns, isolated tables, explicit primary and foreign keys, N:1 and N:N edges, self links, intersect table names and named external endpoints. Unknown endpoints and optionality remain explicit. Export SVG, Mermaid, CSV, editable Word or editable PowerPoint. Word uses native editable drawing groups for individual relationships and tables for column dictionaries. PowerPoint uses native shapes, lines and text, with separate relationship pages to retain every edge.
+- **Canvas apps:** inspect current `Src/*.pa.yaml`, legacy `*.fx.yaml` and supported older `Controls/*.json`, directly or within a solution's nested `.msapp`. View screen/control hierarchies and literal coordinates. Power Fx and raw source are editable in reports. Dynamic layouts and formulas are never executed. Resave older apps in Studio when source is absent.
+- **Forms:** inspect OnLoad handlers in registration order, enabled state, library/function, execution-context flag, parameters and packaged JavaScript. Other exported event registrations also appear in component reports. Missing libraries are marked. Dynamic registrations and indirect calls are not resolved.
+- **Business rules:** category-2 workflows and BusinessRule records show Entity, All forms, Specific form or Unknown scope, including evidence, table, state, form IDs, triggers, recognised condition/action nodes and full packaged definitions. Workflow ownership `Scope` values are never mistaken for rule execution scope.
+- **Views:** exported column layouts, FetchXML and layout XML are documented. JavaScript OnLoad belongs to forms, rather than saved Dataverse views.
+
+Nested canvas extraction is limited to 4,000 entries per app, 40 MB total decompressed nested content and 4 MB per inspected source file. These limits are checked before source inflation. Exceeded limits are reported, with the app remaining visible as incomplete.
+
+Format references: [canvas source](https://learn.microsoft.com/power-apps/maker/canvas-apps/power-apps-yaml), [business-rule scopes](https://learn.microsoft.com/power-apps/maker/data-platform/data-platform-create-business-rule), [workflow process-trigger scope](https://learn.microsoft.com/power-apps/developer/data-platform/reference/entities/workflow#processtriggerscope), [form events](https://learn.microsoft.com/power-apps/developer/model-driven-apps/clientapi/events-forms-grids).
+
+Vendored `js-yaml` 4.3.2 (MIT) is used with its JSON schema for inert canvas source parsing and is also available to the shared footer. Attribution: [vendor/JS-YAML-LICENSE.md](vendor/JS-YAML-LICENSE.md). No runtime package download is required.

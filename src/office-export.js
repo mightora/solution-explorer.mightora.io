@@ -18,21 +18,20 @@ const selectTheme=opts=>{let t={...(themes[opts?.theme]||themes.mightora)};if(op
 const commonProps=()=>({'docProps/core.xml':`${xmlhead}<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/"><dc:creator>Mightora Solution Explorer</dc:creator><cp:lastModifiedBy>Mightora Solution Explorer</cp:lastModifiedBy></cp:coreProperties>`,
 'docProps/app.xml':`${xmlhead}<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties"><Application>Mightora Solution Explorer</Application></Properties>`});
 function rels(entries){return `${xmlhead}<Relationships xmlns="${packageRel}">${entries.map(([id,type,target])=>`<Relationship Id="${id}" Type="${officeRel}/${type}" Target="${target}"/>`).join('')}</Relationships>`;}
-function wRun(s,weight=false,colour=''){return `<w:r><w:rPr>${weight?'<w:b/>':''}${colour?`<w:color w:val="${colour}"/>`:''}</w:rPr><w:t xml:space="preserve">${esc(compact(s,3500))}</w:t></w:r>`;}
+function wRun(s,weight=false,colour=''){return `<w:r><w:rPr>${weight?'<w:b/>':''}${colour?`<w:color w:val="${colour}"/>`:''}</w:rPr>${String(s??'').split(/(\n|\t)/).map(p=>p==='\n'?'<w:br/>':p==='\t'?'<w:tab/>':`<w:t xml:space="preserve">${esc(p.replace(/\r/g,''))}</w:t>`).join('')}</w:r>`;}
 function wPara(s,style='',weight=false){return `<w:p>${style?`<w:pPr><w:pStyle w:val="${style}"/></w:pPr>`:''}${wRun(s,weight)}</w:p>`;}
-function wCell(s,width,opts={}){return `<w:tc><w:tcPr><w:tcW w:w="${width}" w:type="dxa"/><w:shd w:fill="${opts.head?'ECEAFE':'FFFFFF'}"/></w:tcPr>${wPara(s,'',!!opts.head)}</w:tc>`;}
+function wCell(s,width,opts={}){return `<w:tc><w:tcPr><w:tcW w:w="${width}" w:type="dxa"/><w:vAlign w:val="center"/><w:tcMar><w:top w:w="80" w:type="dxa"/><w:bottom w:w="80" w:type="dxa"/><w:left w:w="90" w:type="dxa"/><w:right w:w="90" w:type="dxa"/></w:tcMar><w:shd w:fill="${opts.head?'E8EDF4':'FFFFFF'}"/></w:tcPr>${wPara(s,'',!!opts.head)}</w:tc>`;}
 function wordTable(rows,head=true){if(!rows.length)return wPara('No relevant components were found in the exported metadata.');
  const col=rows[0].length,width=Math.floor(9500/col);
- return `<w:tbl><w:tblPr><w:tblW w:w="9500" w:type="dxa"/><w:tblBorders><w:top w:val="single" w:sz="5" w:color="D9DFEB"/><w:left w:val="single" w:sz="5" w:color="D9DFEB"/><w:bottom w:val="single" w:sz="5" w:color="D9DFEB"/><w:right w:val="single" w:sz="5" w:color="D9DFEB"/><w:insideH w:val="single" w:sz="4" w:color="E9ECF2"/></w:tblBorders></w:tblPr><w:tblGrid>${rows[0].map(()=>`<w:gridCol w:w="${width}"/>`).join('')}</w:tblGrid>${rows.map((row,i)=>`<w:tr>${(i===0&&head)?'<w:trPr><w:tblHeader w:val="true"/></w:trPr>':''}${row.map(v=>wCell(v,width,{head:i===0&&head})).join('')}</w:tr>`).join('')}</w:tbl>`;
+ return `<w:tbl><w:tblPr><w:tblW w:w="9500" w:type="dxa"/><w:tblBorders><w:top w:val="single" w:sz="5" w:color="D9D9D9"/><w:left w:val="single" w:sz="5" w:color="D9D9D9"/><w:bottom w:val="single" w:sz="5" w:color="D9D9D9"/><w:right w:val="single" w:sz="5" w:color="D9D9D9"/><w:insideH w:val="single" w:sz="4" w:color="D9D9D9"/><w:insideV w:val="single" w:sz="4" w:color="D9D9D9"/></w:tblBorders></w:tblPr><w:tblGrid>${rows[0].map(()=>`<w:gridCol w:w="${width}"/>`).join('')}</w:tblGrid>${rows.map((row,i)=>`<w:tr>${(i===0&&head)?'<w:trPr><w:tblHeader w:val="true"/></w:trPr>':''}${row.map(v=>wCell(v,width,{head:i===0&&head})).join('')}</w:tr>`).join('')}</w:tbl>`;
 }
 function diagramWord(d){let output=wPara(d.title,'Heading2');output+=wPara(d.note);
  if(!d.links.length)return output+wPara('No relationships with both endpoints identified in this exported package.');
  output+=wPara('Editable relationship map: source → relationship → target. All values are editable Word table cells.');
- for(const link of d.links.slice(0,100)){
+ for(const link of d.links){
   output+=wordTable([[link.source,'→',link.target],[link.name,link.kind||'Relationship','Discovered metadata']],false);
   output+=wPara('');
  }
- if(d.links.length>100)output+=wPara(`${d.links.length-100} additional relationships are included in the relationship inventory but omitted from this visual map to keep the document manageable.`);
  return output;
 }
 async function docx(report,opts={}){
@@ -63,13 +62,13 @@ async function docx(report,opts={}){
 }
 const I=x=>Math.round(x*914400);
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
-function pText(s,size=16,fill='243453',bold=false,align='l'){
- const text=esc(compact(s,270));
- return `<a:p><a:pPr algn="${align}"/><a:r><a:rPr lang="en-GB" sz="${Math.round(size*100)}"${bold?' b="1"':''}><a:solidFill><a:srgbClr val="${fill}"/></a:solidFill></a:rPr><a:t>${text}</a:t></a:r><a:endParaRPr lang="en-GB"/></a:p>`;
+function pText(s,size=16,fill='243453',bold=false,align='l',font=''){
+ const text=esc(String(s??''));
+ return `<a:p><a:pPr algn="${align}"/><a:r><a:rPr lang="en-GB" sz="${Math.round(size*100)}"${bold?' b="1"':''}><a:solidFill><a:srgbClr val="${fill}"/></a:solidFill>${font?`<a:latin typeface="${esc(font)}"/>`:''}</a:rPr><a:t xml:space="preserve">${text}</a:t></a:r><a:endParaRPr lang="en-GB"/></a:p>`;
 }
 function shape(id,name,x,y,w,h,opts={}){
  const fill=opts.fill||'FFFFFF',stroke=opts.stroke||fill,lines=String(opts.text??'').split('\n');
- return `<p:sp><p:nvSpPr><p:cNvPr id="${id}" name="${esc(name)}"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="${I(x)}" y="${I(y)}"/><a:ext cx="${I(w)}" cy="${I(h)}"/></a:xfrm><a:prstGeom prst="${opts.geometry||'rect'}"><a:avLst/></a:prstGeom><a:solidFill><a:srgbClr val="${fill}"/></a:solidFill><a:ln w="${opts.lineWidth||7000}"><a:solidFill><a:srgbClr val="${stroke}"/></a:solidFill></a:ln></p:spPr><p:txBody><a:bodyPr wrap="square" anchor="ctr" lIns="${I(opts.pad??0.08)}" rIns="${I(opts.pad??0.08)}" tIns="${I(0.02)}" bIns="${I(0.02)}"/><a:lstStyle/>${lines.map(l=>pText(l,opts.size||14,opts.color||'243453',!!opts.bold,opts.align||'l')).join('')}</p:txBody></p:sp>`;
+ return `<p:sp><p:nvSpPr><p:cNvPr id="${id}" name="${esc(name)}"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="${I(x)}" y="${I(y)}"/><a:ext cx="${I(w)}" cy="${I(h)}"/></a:xfrm><a:prstGeom prst="${opts.geometry||'rect'}"><a:avLst/></a:prstGeom><a:solidFill><a:srgbClr val="${fill}"/></a:solidFill><a:ln w="${opts.lineWidth||7000}"><a:solidFill><a:srgbClr val="${stroke}"/></a:solidFill></a:ln></p:spPr><p:txBody><a:bodyPr wrap="square" anchor="${opts.anchor||'ctr'}" lIns="${I(opts.pad??0.08)}" rIns="${I(opts.pad??0.08)}" tIns="${I(0.02)}" bIns="${I(0.02)}"/><a:lstStyle/>${lines.map(l=>pText(l,opts.size||14,opts.color||'243453',!!opts.bold,opts.align||'l',opts.font||'')).join('')}</p:txBody></p:sp>`;
 }
 function line(id,x1,y1,x2,y2,color='B5BDD0'){
  const x=Math.min(x1,x2),y=Math.min(y1,y2),w=Math.abs(x2-x1),h=Math.abs(y2-y1);
@@ -81,7 +80,7 @@ function makeSlide(title,subtitle,content,theme,index){
  const dark=theme.background!=='FFFFFF';
  rect('Background',0,0,13.333,7.5,{fill:theme.background,stroke:theme.background});
  rect('Top accent',0,0,13.333,.12,{fill:theme.primary,stroke:theme.primary});
- rect('Slide title',.58,.34,11.9,.64,{text:title,size:23,bold:true,color:theme.ink,fill:theme.background,stroke:theme.background});
+ rect('Slide title',.58,.34,11.9,.64,{text:title,size:title.length>140?13:title.length>85?17:23,bold:true,color:theme.ink,fill:theme.background,stroke:theme.background});
  if(subtitle)rect('Slide subtitle',.6,1.08,12.1,.46,{text:subtitle,size:11.5,color:theme.muted,fill:theme.background,stroke:theme.background});
  content((type,props)=>type==='shape'?rect(...props):type==='line'?(shapes+=line(id++,...props)):null,theme);
  rect('Footer',.55,7.17,11.5,.18,{text:'MIGHTORA  /  SOLUTION EXPLORER   •   Editable PowerPoint report',size:8,color:theme.muted,fill:theme.background,stroke:theme.background});
@@ -91,7 +90,7 @@ function makeSlide(title,subtitle,content,theme,index){
 function contentsPage(title,description,rows,t,position){return makeSlide(title,description,(put,theme)=>{
   let y=1.63;
   for(const r of rows){if(y>6.68)break;
-   put('shape',['Detail row',.6,y,12.1,.59,{fill:theme.soft,stroke:theme.soft,text:compact(r,170),size:13,color:theme.ink,pad:.13}]);y+=.69;
+   put('shape',['Detail row',.6,y,12.1,.59,{fill:theme.soft,stroke:theme.soft,text:r,size:13,color:theme.ink,pad:.13}]);y+=.69;
   }
  },t,position);
 }
@@ -129,39 +128,49 @@ function formLayoutPage(form,tab,t,position){
    }
  },t,position);
 }
+function wrapText(value,width){const lines=[];for(const line of String(value??'').replace(/\r/g,'').split('\n')){const chars=Array.from(line);if(!chars.length)lines.push('');for(let i=0;i<chars.length;i+=width)lines.push(chars.slice(i,i+width).join(''));}return lines;}
+function tablePages(tab){
+ const n=tab.headers.length,groups=[];if(n<=4)groups.push(tab.headers.map((_,i)=>i));else for(let i=1;i<n;i+=3)groups.push([0,...Array.from({length:Math.min(3,n-i)},(_,j)=>i+j)]);
+ const pages=[];
+ for(const group of groups){const header={head:true,cells:group.map(i=>tab.headers[i]),height:.55};let page=[header],height=.59;
+  for(const row of tab.rows){const lines=group.map(i=>wrapText(row[i],Math.max(25,Math.floor(142/group.length)))),parts=Math.max(1,...lines.map(a=>Math.ceil(a.length/12)));
+   for(let part=0;part<parts;part++){const cells=lines.map(a=>a.slice(part*12,(part+1)*12).join('\n')),count=Math.max(1,...cells.map(c=>c.split('\n').length)),h=count*.18+.19;
+    if(height+h>5.25&&page.length>1){pages.push(page);page=[header];height=.59;}page.push({head:false,cells,height:h});height+=h+.04;
+   }
+  }if(page.length>1)pages.push(page);
+ }return pages;
+}
 async function pptx(report,opts={}){
  if(!root.JSZip)throw Error('ZIP library not loaded.');const theme=selectTheme(opts),pages=[];
- const add=(s)=>{if(pages.length<225)pages.push(s);};
+ const add=(s)=>{pages.push(s);};
  add(makeSlide(report.title,report.subtitle,(put,t)=>{
  put('shape',['Report type',.9,2.0,11.5,1.0,{text:report.mode==='comparison'?'SOLUTION CHANGE ASSESSMENT':'SOLUTION TECHNICAL DOCUMENTATION',size:21,bold:true,color:t.primary,fill:t.background,stroke:t.background}]);
  put('shape',['Info',.9,3.05,10.5,1.4,{text:'Prepared locally from exported solution metadata.\nEditable native shapes, tables and relationship maps.',size:18,color:t.ink,fill:t.background,stroke:t.background}]);
  },theme,1));
- add(contentsPage('Report contents','Each table, label and diagram can be edited directly in PowerPoint.',report.sections.map(s=>s.title).slice(0,8),theme,pages.length+1));
- for(const section of report.sections){if(pages.length>=220)break;
-  let intro=[section.note,...section.paragraphs].filter(Boolean);
-  if(intro.length)add(contentsPage(section.title,'Documentation scope and notes',intro.slice(0,8),theme,pages.length+1));
+ for(let i=0;i<report.sections.length;i+=7)add(contentsPage('Report contents','Each table, label and diagram can be edited directly in PowerPoint.',report.sections.slice(i,i+7).map(s=>s.title),theme,pages.length+1));
+ for(const section of report.sections){
+  let intro=[section.note,...section.paragraphs||[]].filter(Boolean).flatMap(p=>wrapText(p,145));
+  if(intro.length)for(let i=0;i<intro.length;i+=7)add(contentsPage(section.title,'Documentation scope and notes',intro.slice(i,i+7),theme,pages.length+1));
   for(const tab of section.tables){
    if(!tab.rows.length){add(contentsPage(section.title,tab.title,['No corresponding metadata was extracted from the supplied solution export.'],theme,pages.length+1));continue;}
-   const size=8,total=Math.ceil(tab.rows.length/size);
-   for(let i=0;i<total;i++){if(pages.length>=220)break;add(tabularPage(section.title,tab,tab.rows.slice(i*size,(i+1)*size),i,total,theme,pages.length+1));}
+   for(const page of tablePages(tab))add(makeSlide(section.title,tab.title,(put,t)=>{let y=1.65;for(const row of page){let x=.65;for(let c=0;c<row.cells.length;c++){const w=12/row.cells.length;put('shape',['Editable table cell',x,y,w-.04,row.height,{fill:row.head?t.primary:t.soft,stroke:t.background,text:row.cells[c],size:row.head?11:10.5,color:row.head?'FFFFFF':t.ink,bold:row.head,pad:.08}]);x+=w;}y+=row.height+.04;}},theme,pages.length+1));
   }
  }
- for(const diag of report.diagrams||[]){if(pages.length>=220)break;
+ for(const diag of report.diagrams||[]){
   if(!diag.entities.length||!diag.links.length){add(contentsPage(diag.title,'Editable relationship diagram',['No complete relationship endpoints were extracted from this export.'],theme,pages.length+1));continue;}
   // Group diagram nodes by documented connections. The full connection list appears separately in the editable inventory tables.
-  const nodes=[...new Set(diag.links.flatMap(l=>[l.source,l.target]))].slice(0,64),parts=Math.ceil(nodes.length/8);
-  for(let i=0;i<parts;i++){if(pages.length>=220)break;add(diagramPage(diag,nodes.slice(i*8,(i+1)*8),i,parts,theme,pages.length+1));}
+  const nodes=[...new Set(diag.links.flatMap(l=>[l.source,l.target]))],parts=Math.ceil(nodes.length/8);
+  for(let i=0;i<parts;i++)add(diagramPage(diag,nodes.slice(i*8,(i+1)*8),i,parts,theme,pages.length+1));
  }
  // Form previews use editable PowerPoint shapes, not screenshots.
  let formPages=0;
  for(const form of report.forms||[]){
-  if(pages.length>=220||formPages>=24)break;
+  if(formPages>=24)break;
   for(const tab of (form.tabs||[]).slice(0,3)){
-   if(pages.length>=220||formPages>=24)break;
+   if(formPages>=24)break;
    add(formLayoutPage(form,tab,theme,pages.length+1));formPages++;
   }
  }
- if(pages.length>=220)add(contentsPage('Presentation size limit','Some detail may be omitted to respect the 225-slide export limit. Download the DOCX or CSV for a longer report.',['Full metadata can be exported as JSON or CSV from Solution Explorer.'],theme,pages.length+1));
  const zip=new root.JSZip();
  const types=[`<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>`,`<Default Extension="xml" ContentType="application/xml"/>`,`<Override PartName="/ppt/presentation.xml" ContentType="${pptMain}"/>`,`<Override PartName="/ppt/slideMasters/slideMaster1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideMaster+xml"/>`,`<Override PartName="/ppt/slideLayouts/slideLayout1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml"/>`,`<Override PartName="/ppt/theme/theme1.xml" ContentType="application/vnd.openxmlformats-officedocument.theme+xml"/>`,`<Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>`,`<Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>`];
  for(let i=0;i<pages.length;i++){
@@ -181,5 +190,5 @@ async function pptx(report,opts={}){
  const props=commonProps();for(const [p,v] of Object.entries(props))zip.file(p,v);
  return zip.generateAsync({type:'blob',compression:'DEFLATE',compressionOptions:{level:6}});
 }
-root.SolutionOffice={docx,pptx,themes};
+root.SolutionOffice={docx,pptx,themes,_native:{makeSlide,wordTable,wPara,wRun,wrapText,selectTheme}};
 })(globalThis);

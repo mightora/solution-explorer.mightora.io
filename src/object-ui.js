@@ -21,7 +21,8 @@ function select(id,scroll=false){
    <h3>${esc(c.name)}</h3><p class="object-description">${esc(c.description||'Metadata discovered inside this solution export.')}</p>
    <div class="object-source"><strong>Source:</strong> ${esc(detail?.source||c.source||'Extracted component inventory')}</div>
    <h4>Component properties</h4>${properties({...c.properties,...detail?.properties})}
-   <div class="object-inspector-actions"><button class="btn btn-outline small" id="object-download">Export selected JSON ↓</button>${c.type==='flow'?'<a class="btn btn-outline small" href="#flow-explorer">Open flow map ↗</a>':''}</div>
+   <div class="object-inspector-actions"><button class="btn btn-outline small" id="object-download">Export selected JSON ↓</button><button class="btn btn-outline small" id="object-docx">Editable Word ↓</button><button class="btn btn-outline small" id="object-pptx">Editable PowerPoint ↓</button>${c.type==='flow'?'<a class="btn btn-outline small" href="#flow-explorer">Open flow map ↗</a>':''}</div><p id="object-export-status" role="status"></p>
+   ${globalThis.SolutionComponentUI?.markup(model,id)||''}
    <h4>Contained objects <span class="object-count-inline">${detail?.nodeCount||0}</span></h4>
    ${detail?.children?.length?detailsHTML(detail.children):`<p class="object-limited">${c.coverage==='referenced'?'This is an external dependency: its definition is not packaged here.':c.coverage==='unsupported'?'The component type is not yet mapped to a parser.': 'This export does not expose a recognised child-object definition for this component.'}</p>`}
    ${detail?.limited?'<p class="object-limited">This component reached the safe extraction limit. Additional nested objects may exist in the ZIP.</p>':''}
@@ -29,9 +30,10 @@ function select(id,scroll=false){
    ${others.length?`<ul class="object-related">${others.map(x=>`<li><button type="button" data-related="${esc(x.id)}"><span>${esc(x.name)}</span><small>${esc(typeName(x.type))} ↗</small></button></li>`).join('')}</ul>`:'<p class="muted">No direct relationship found in the supported metadata. This is not proof of independence.</p>'}
    <p class="object-help">Missing details? <a href="https://github.com/mightora/solution-explorer.mightora.io/issues/new?template=bug_report.yml" target="_blank" rel="noopener noreferrer">Report an unsupported object ↗</a>. Please use fictional or redacted examples.</p>`;
  area.querySelector('#object-download').addEventListener('click',()=>{
-   const payload={name:c.name,type:c.type,coverage:c.coverage||'inspected',source:detail?.source||c.source||'',properties:{...c.properties,...detail?.properties},children:detail?.children||[],related:others.map(x=>({name:x.name,type:x.type}))};
+   const payload={name:c.name,type:c.type,coverage:c.coverage||'inspected',source:detail?.source||c.source||'',properties:{...c.properties,...detail?.properties},children:detail?.children||[],related:others.map(x=>({name:x.name,type:x.type})),...globalThis.SolutionDetails?.component(model,id)};
    const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='solution-object-'+c.type+'.json';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1200);
  });
+ for(const kind of ['docx','pptx'])area.querySelector('#object-'+kind).addEventListener('click',e=>globalThis.SolutionComponentUI.exportItem(model,id,kind,e.currentTarget,area.querySelector('#object-export-status')));
  for(const link of area.querySelectorAll('[data-related]'))link.addEventListener('click',()=>select(link.dataset.related,true));
  for(const button of $('object-tree').querySelectorAll('[data-object-id]')){const active=button.dataset.objectId===id;button.classList.toggle('selected',active);button.setAttribute('aria-current',active?'true':'false');}
  if(scroll){$('object-browser').scrollIntoView({behavior:'smooth',block:'start'});area.focus({preventScroll:true});}
