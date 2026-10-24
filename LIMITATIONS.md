@@ -61,3 +61,13 @@ Business-rule scope derives from explicit rule scope, ProcessTriggerScope, form 
 OnLoad documentation shows exported registrations and packaged libraries, including disabled registrations. It cannot establish dynamically added handlers, functions hidden in unavailable dependencies, async settings or the exact runtime path through a JavaScript library. Saved views expose FetchXML and column layout rather than form events.
 
 ERD completeness means all tables, columns and relationships discovered in the supplied export. Metadata omitted by Dataverse or managed packaging cannot be invented. External endpoint tables are marked. PK/FK markers require explicit metadata; N:1/N:N do not imply required/optional participation. Mermaid ER notation has limited support for unknown optionality; review the export comment. Large ERDs are dense, so filtering and individual exports are provided.
+
+## Reference and impact analysis
+
+Dependency arrows mean dependent → required component. Declared manifest references, structured metadata, source-name occurrences and possible text matches are different evidence classes. A code comment, string or formula literal is not proof of a live call. Short column names can be ambiguous across tables. Display-name matches and unbound column matches are possible, and excluded by default. A unique form-library record context can narrow a field match, but does not establish every runtime branch or indirect call.
+
+The graph does not resolve dynamic JavaScript, computed logical names, external code, runtime flow values, unavailable app-module bindings or every Power Fx binding. Impact is a breadth-first static review with a depth of 1–8, cycle protection and discovered paths. It cannot prove a deployment will break or that an unconnected component is independent.
+
+Source-reference scanning is limited to 32 million characters and 50,000 evidence edges. Coverage is displayed, and original source search remains available beyond the graph scan budget. Repeated references are aggregated with exact scanned occurrence counts and up to eight representative locations per edge. The screen draws at most 60 nodes; graph SVG/JSON exports include the whole selected graph within the stated scan budgets.
+
+Source comparison uses line alignment up to 400,000 line-pair cells, then explicitly switches to positional comparison. More than 40,000 total lines are left for an external diff to protect browser memory. The comparison is textual or structural, not a semantic code diff. Definition jumps are static candidates and can be ambiguous. Incomplete metadata and source paths are labelled. History is in memory and resets when the workspace changes.
