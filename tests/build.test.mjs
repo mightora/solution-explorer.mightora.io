@@ -100,7 +100,7 @@ test('standalone inline runtime exactly matches the online application modules i
  const root=path.resolve(import.meta.dirname,'..');
  const online=fs.readFileSync(path.join(dir,'index.html'),'utf8');
  const offline=fs.readFileSync(path.join(dir,'downloads/solution-explorer-offline.html'),'utf8');
- const paths=[...online.matchAll(/<script\s+src="((?:vendor|src)\/[A-Za-z0-9_./-]+\.js)"\s+defer><\/script>/g)].map(m=>m[1]);
+ const paths=[...online.matchAll(/<script\s+src="((?:vendor|src)\/[A-Za-z0-9_./-]+\.js)(?:\?v=[a-f0-9]+)?"\s+defer><\/script>/g)].map(m=>m[1]);
  assert.ok(paths.includes('src/parser.js'));
  assert.ok(paths.includes('src/component-catalog.js'));
  assert.ok(paths.includes('src/object-explorer.js'));
@@ -113,6 +113,12 @@ test('standalone inline runtime exactly matches the online application modules i
  const expected=paths.map(p=>fs.readFileSync(path.join(root,p),'utf8').replaceAll('</script','<\\/script')).join('\n;\n');
  assert.ok(inline.includes(expected),'offline runtime must embed every online module, unmodified and in order');
  assert.doesNotThrow(()=>new vm.Script(expected));
+});
+test('online runtime and styles use one release key to prevent stale mixed-version modules',()=>{
+ const online=fs.readFileSync(path.join(dir,'index.html'),'utf8'),assets=[...online.matchAll(/(?:src|href)="((?:vendor|src)\/[A-Za-z0-9_./-]+\.(?:js|css))\?v=([a-f0-9]{16})"/g)];
+ assert.ok(assets.length>20);assert.equal(new Set(assets.map(m=>m[2])).size,1);
+ assert.ok(assets.some(m=>m[1]==='src/office-export.js'));assert.ok(assets.some(m=>m[1]==='src/office-components.js'));
+ assert.ok(!/(?:src|href)="(?:vendor|src)\/[A-Za-z0-9_./-]+\.(?:js|css)"/.test(online));
 });
 test('offline core can initialise object explorer using only its bundled metadata modules',()=>{
  const root=path.resolve(import.meta.dirname,'..');

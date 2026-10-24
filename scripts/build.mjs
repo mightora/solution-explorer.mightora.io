@@ -11,6 +11,11 @@ const sourcePage=read('index.html');
 const scriptPaths=[...sourcePage.matchAll(/<script\s+src="((?:vendor|src)\/[A-Za-z0-9_./-]+\.js)"\s+defer><\/script>/g)].map(match=>match[1]);
 if(!scriptPaths.includes('src/app.js')||!scriptPaths.includes('src/component-catalog.js')||!scriptPaths.includes('src/object-explorer.js')||!scriptPaths.includes('src/object-ui.js'))throw new Error('Offline build is missing a required application module.');
 for(const p of ['index.html','src/styles.css',...scriptPaths,'LICENSE','vendor/JSZIP-LICENSE.md','vendor/JS-YAML-LICENSE.md'])copy(p);
+// A returning browser must not combine an updated wrapper with a cached export engine.
+// All local online modules and CSS share a content-derived release key. Offline
+// and Dataverse editions still embed the unmodified sources in the same order.
+const releaseKey=crypto.createHash('sha256').update(scriptPaths.map(p=>p+'\n'+read(p)).join('\n')+read('src/styles.css')).digest('hex').slice(0,16);
+write('index.html',sourcePage.replace(/((?:src|href)=")((?:vendor|src)\/[A-Za-z0-9_./-]+\.(?:js|css))(")/g,(_match,start,file,end)=>start+file+'?v='+releaseKey+end));
 // Serve shared footer logo artwork from the same GitHub Pages origin when available.
 for(const asset of ['assets/mightora-logo.png','assets/footer-techtweedie.png','assets/footer-tweed.png']) if(fs.existsSync(path.join(root,asset)))copy(asset);
 // Produce downloadable teaching ZIPs from the exact same sample definitions used in the browser.
