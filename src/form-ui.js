@@ -3,7 +3,7 @@
 'use strict';
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
-let forms=[],selected=0,activeTab=0;
+let forms=[],selected=0,activeTab=0,model=null;
 function layout(form){
  const tabs=form.tabs||[],tab=tabs[activeTab]||tabs[0];
  const nav=tabs.map((t,i)=>`<button type="button" class="form-tab ${i===activeTab?'active':''}" data-form-tab="${i}" role="tab" aria-selected="${i===activeTab}" tabindex="${i===activeTab?0:-1}">${esc(t.name)}${t.visible?'':' · hidden'}</button>`).join('');
@@ -19,11 +19,11 @@ function render(){
   $('form-preview-summary').textContent='Load a solution with form layout definitions.';return;}
  pick.value=String(selected);
  $('form-preview-summary').textContent=`${forms.length} form layout(s) · ${f.tabCount} tabs · ${f.sectionCount} sections · ${f.fieldCount} controls`+(f.truncated?' · Some detail was truncated':'');
- host.innerHTML=layout(f);
+ host.innerHTML=layout(f)+(globalThis.SolutionComponentUI?'<div class="form-event-details">'+globalThis.SolutionComponentUI.formEvents(f,model)+'</div>':'');
  for(const b of host.querySelectorAll('[data-form-tab]'))b.addEventListener('click',()=>{activeTab=Number(b.dataset.formTab)||0;render();});
 }
 $('form-preview-choice').addEventListener('change',e=>{selected=Number(e.target.value)||0;activeTab=0;render();});
-document.addEventListener('solution-workspace-change',e=>{forms=e.detail?.a?.formLayouts||[];selected=0;activeTab=0;render();});
+document.addEventListener('solution-workspace-change',e=>{model=e.detail?.a||null;forms=model?.formLayouts||[];selected=0;activeTab=0;render();});
 document.addEventListener('object-open-request',e=>{
  const id=e.detail?.id||'';
  if(!id.startsWith('form:')||!forms.length)return;

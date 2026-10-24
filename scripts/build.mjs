@@ -10,7 +10,7 @@ fs.rmSync(dist,{recursive:true,force:true});fs.mkdirSync(dist,{recursive:true});
 const sourcePage=read('index.html');
 const scriptPaths=[...sourcePage.matchAll(/<script\s+src="((?:vendor|src)\/[A-Za-z0-9_./-]+\.js)"\s+defer><\/script>/g)].map(match=>match[1]);
 if(!scriptPaths.includes('src/app.js')||!scriptPaths.includes('src/component-catalog.js')||!scriptPaths.includes('src/object-explorer.js')||!scriptPaths.includes('src/object-ui.js'))throw new Error('Offline build is missing a required application module.');
-for(const p of ['index.html','src/styles.css',...scriptPaths,'LICENSE'])copy(p);
+for(const p of ['index.html','src/styles.css',...scriptPaths,'LICENSE','vendor/JSZIP-LICENSE.md','vendor/JS-YAML-LICENSE.md'])copy(p);
 // Serve shared footer logo artwork from the same GitHub Pages origin when available.
 for(const asset of ['assets/mightora-logo.png','assets/footer-techtweedie.png','assets/footer-tweed.png']) if(fs.existsSync(path.join(root,asset)))copy(asset);
 // Produce downloadable teaching ZIPs from the exact same sample definitions used in the browser.
@@ -118,7 +118,7 @@ dv=dv.replace(/<meta name="description"[^>]*>/i,'<meta name="description" conten
 const embedded=`<script>${js}</script>`;
 if(!dv.includes(embedded))throw Error('Cannot locate self-contained Explorer runtime for Dataverse edition.');
 dv=dv.replace(embedded,()=>`<script>${js}\n;\n${dvRuntime}</script>`);
-const dvHeader=`<header class="dv-topbar"><div class="dv-topbrand"><img class="dv-brand-img" alt="Mightora" src="${brandLogo}"><span class="dv-product">Solution Explorer / Dataverse</span></div><nav class="dv-nav" aria-label="Workspace sections"><a href="#dataverse-environment">Environment</a><a href="#workspace">ZIP files</a><a href="#object-browser">Objects</a><a href="#form-preview">Forms</a><a href="#flow-explorer">Flows</a><a href="#report-builder">Reports</a><a href="#comparison">Compare</a></nav></header>`;
+const dvHeader=`<header class="dv-topbar"><div class="dv-topbrand"><img class="dv-brand-img" alt="Mightora" src="${brandLogo}"><span class="dv-product">Solution Explorer / Dataverse</span></div><nav class="dv-nav" aria-label="Workspace sections"><a href="#dataverse-environment">Environment</a><a href="#workspace">ZIP files</a><a href="#webresources">Web resources</a><a href="#relationship-map">Full ERD</a><a href="#component-visuals">Apps and rules</a><a href="#object-browser">Objects</a><a href="#form-preview">Forms</a><a href="#flow-explorer">Flows</a><a href="#report-builder">Reports</a><a href="#comparison">Compare</a></nav></header>`;
 const dvFooter='<footer class="dv-bottom"><strong>Mightora Solution Explorer</strong><span>Connected to the current Dataverse environment · No data sent to Mightora</span><a href="https://mightora.io" target="_blank" rel="noopener noreferrer">Mightora</a><a href="https://github.com/mightora/solution-explorer.mightora.io" target="_blank" rel="noopener noreferrer">Source</a><a href="https://github.com/mightora/solution-explorer.mightora.io/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">MIT licence</a></footer>';
 dv=dv.replace('<body>','<body>'+dvHeader).replace('<section id="workspace"',dvPanel+'\n<section id="workspace"');
 dv=dv.replace('</body>',dvFooter+'</body>');

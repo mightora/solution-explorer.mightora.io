@@ -35,7 +35,7 @@
         const aName=field(a,'PhysicalName','LogicalName','SchemaName','Name')||direct(a,'PhysicalName','LogicalName','SchemaName');
         if(!aName)continue;
         const type=field(a,'Type','AttributeType','AttributeTypeName')||deep(a,'Type','AttributeType');
-        add(map,'column',eName+'.'+aName,{table:eName,dataType:type,required:field(a,'RequiredLevel')||deep(a,'RequiredLevel'),maxLength:field(a,'MaxLength')||deep(a,'MaxLength'),displayName:deep(a,'DisplayName')||aName},aName);
+        add(map,'column',eName+'.'+aName,{table:eName,dataType:type,required:field(a,'RequiredLevel')||deep(a,'RequiredLevel'),maxLength:field(a,'MaxLength')||deep(a,'MaxLength'),displayName:deep(a,'DisplayName')||aName,isPrimaryId:field(a,'IsPrimaryId')||deep(a,'IsPrimaryId'),targets:descendants(a,'Target').map(x=>field(x,'Name','LogicalName')||x.textContent.trim()).join(', ')},aName);
       }
       for(const form of descendants(e,'systemform')){
         const nm=field(form,'name','Name')||deep(form,'name')||field(form,'id','FormId');if(nm)add(map,'form',eName+' / '+nm,{table:eName,kind:'Form'});
@@ -44,12 +44,12 @@
         const nm=field(view,'name','Name')||deep(view,'name')||field(view,'id','SavedQueryId');if(nm)add(map,'view',eName+' / '+nm,{table:eName,kind:'View'});
       }
     }
-    for(const e of descendants(doc,'EntityRelationship').concat(descendants(doc,'Relationship'))){
+    for(const e of descendants(doc,'EntityRelationship').concat(descendants(doc,'Relationship'),descendants(doc,'ManyToManyRelationship'),descendants(doc,'OneToManyRelationship'),descendants(doc,'ManyToOneRelationship'))){
       let name=field(e,'Name','SchemaName')||deep(e,'SchemaName');if(!name)continue;
-      const source=field(e,'ReferencingEntityName','ReferencingEntity')||deep(e,'ReferencingEntityName','ReferencingEntity')||field(e,'Entity1LogicalName');
-      const target=field(e,'ReferencedEntityName','ReferencedEntity')||deep(e,'ReferencedEntityName','ReferencedEntity')||field(e,'Entity2LogicalName');
-      const kind=field(e,'EntityRelationshipType','RelationshipType')||deep(e,'EntityRelationshipType','RelationshipType')||'Relationship';
-      add(map,'relationship',name,{source,target,kind},`${source||'Table'} → ${target||'Table'}`);
+      const source=field(e,'ReferencingEntityName','ReferencingEntity','Entity1LogicalName','Entity1Name')||deep(e,'ReferencingEntityName','ReferencingEntity','Entity1LogicalName','Entity1Name');
+      const target=field(e,'ReferencedEntityName','ReferencedEntity','Entity2LogicalName','Entity2Name')||deep(e,'ReferencedEntityName','ReferencedEntity','Entity2LogicalName','Entity2Name');
+      const kind=field(e,'EntityRelationshipType','RelationshipType')||deep(e,'EntityRelationshipType','RelationshipType')||(e.localName||e.nodeName).replace(/Relationship$/,'')||'Relationship';
+      add(map,'relationship',name,{source,target,kind,sourceAttribute:field(e,'ReferencingAttributeName','ReferencingAttribute','Entity1IntersectAttribute')||deep(e,'ReferencingAttributeName','ReferencingAttribute','Entity1IntersectAttribute'),targetAttribute:field(e,'ReferencedAttributeName','ReferencedAttribute','Entity2IntersectAttribute')||deep(e,'ReferencedAttributeName','ReferencedAttribute','Entity2IntersectAttribute'),intersectEntity:field(e,'IntersectEntityName')||deep(e,'IntersectEntityName')},`${source||'Table'} → ${target||'Table'}`);
     }
   }
   function workflowRecords(doc,map){
@@ -61,7 +61,7 @@
     }
   }
   function otherRecords(doc,map){
-    for(const w of descendants(doc,'WebResource').concat(descendants(doc,'WebResourceBase'))){const n=field(w,'Name','name')||deep(w,'Name');if(n)add(map,'webresource',n,{kind:field(w,'WebResourceType')||deep(w,'WebResourceType')});}
+    for(const w of descendants(doc,'WebResource').concat(descendants(doc,'WebResourceBase'))){const n=field(w,'Name','name')||deep(w,'Name');if(n)add(map,'webresource',n,{kind:field(w,'WebResourceType')||deep(w,'WebResourceType'),fileName:field(w,'FileName')||deep(w,'FileName')});}
     for(const w of descendants(doc,'environmentvariabledefinition')){
       const n=field(w,'schemaname','SchemaName')||deep(w,'schemaname');
       if(n)add(map,'environment',n,{type:field(w,'type')||deep(w,'type'),description:'Values intentionally withheld'});

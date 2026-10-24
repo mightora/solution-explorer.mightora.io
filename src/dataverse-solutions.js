@@ -82,29 +82,54 @@ async function exportUnmanaged(client,solution){
  return base64File(result.ExportSolutionFile,solution.uniqueName);
 }
 const CODES={1:'table',2:'column',3:'relationship',9:'choice',14:'key',20:'role',21:'privilege',24:'form',26:'view',29:'flow',31:'report',36:'emailtemplate',44:'duplicate',46:'datamap',48:'command',50:'ribbon',59:'chart',60:'form',61:'webresource',62:'sitemap',66:'pcf',70:'fieldsecurity',71:'fieldpermission',90:'plugintype',91:'pluginassembly',92:'pluginstep',93:'pluginimage',95:'endpoint',150:'routing',152:'sla',153:'slaitem',161:'offlineprofile',300:'app',371:'connector',380:'environment',400:'ai',402:'ai'};
-function inventoryModel(solution,rows,truncated){
+function inventoryModel(solution,rows,truncated,webInfo=[],resourceWarning=''){
  const labels=root.SolutionCore?.LABELS||{},types=root.SolutionCore?.TYPES||[];
+ const webLookup=new Map(webInfo.map(w=>[String(w.webresourceid).toLowerCase(),w]));
  const components=rows.filter(x=>Number.isInteger(x.componenttype)).map((x,i)=>{
   const type=(root.SolutionCore?.ROOT_COMPONENT_TYPES||CODES)[String(x.componenttype)]||'unknown';
   const ident=String(x.objectid||x.solutioncomponentid||i).slice(0,80);
-  const friendly=labels[type]||type;
-  return {id:type+':'+ident.toLowerCase(),type,name:friendly+' · '+ident,
-   description:'Live solution component reference (definition not exported)',
+  const friendly=labels[type]||type,web=type==='webresource'?webLookup.get(ident.toLowerCase()):null;
+  return {id:type+':'+ident.toLowerCase(),type,name:web?.name||friendly+' · '+ident,
+   description:web?'Read-only live web resource metadata':'Live solution component reference (definition not exported)',
    coverage:type==='unknown'?'unsupported':'discovered',source:'Current environment · solutioncomponents',
-   properties:{componentType:String(x.componenttype),objectId:ident,rootComponentBehavior:String(x.rootcomponentbehavior??'Not supplied')}
+   properties:{componentType:String(x.componenttype),objectId:ident,rootComponentBehavior:String(x.rootcomponentbehavior??'Not supplied'),
+    ...(web?{displayName:escName(web.displayname||''),webResourceType:String(web.webresourcetype||''),modifiedOn:String(web.modifiedon||'')}: {})}
   };
  });
  const counts=Object.fromEntries(types.map(t=>[t,components.filter(c=>c.type===t).length]));
  const coverage={inspected:0,discovered:components.filter(c=>c.coverage==='discovered').length,referenced:0,unsupported:components.filter(c=>c.coverage==='unsupported').length};
- const warning='Metadata-only inventory: managed/Default solutions cannot be exported via ExportSolution. Names and full definitions are not recoverable from solutioncomponent references alone. Do not treat this as a ZIP unpack or a complete architecture assessment.';
+ const warning='Metadata-only inventory: managed/Default solutions cannot be exported via ExportSolution. Many component names and full definitions cannot be recovered from solutioncomponent references alone. Web resource names are resolved when permitted and their content is read only on request. Do not treat this as a ZIP unpack or a complete architecture assessment.';
+ const webResources=components.filter(c=>c.type==='webresource').map(c=>({id:c.id,name:c.name,kind:root.SolutionWebResources?.typeOf(c.name)||'Web resource',path:webLookup.has(String(c.properties.objectId).toLowerCase())?'dataverse:'+c.properties.objectId:'',size:null,coverage:c.coverage,properties:c.properties}));
  return {info:{name:solution.uniqueName,version:solution.version||'',managed:solution.managed,publisher:'Not supplied',filename:solution.name+' (live inventory)'},
-  components,counts,coverage,dependencies:[],flowDetails:[],formLayouts:[],warnings:[warning,...(truncated?['Live inventory was limited to '+MAX_COMPONENTS+' components.']:[])],partial:true,live:true};
+  components,webResources,counts,coverage,dependencies:[],flowDetails:[],formLayouts:[],warnings:[warning,...(resourceWarning?[resourceWarning]:[]),...(truncated?['Live inventory was limited to '+MAX_COMPONENTS+' components.']:[])],partial:true,live:true};
+}
+async function lookupWebResources(client,rows){
+ const ids=[...new Set(rows.filter(x=>x.componenttype===61&&guid.test(x.objectid||'')).map(x=>x.objectid.toLowerCase()))],found=[];
+ // Resolve by the solution's object IDs; do not list unrelated environment files.
+ for(let i=0;i<ids.length;i+=15){
+  const expression=ids.slice(i,i+15).map(id=>'webresourceid eq '+id).join(' or ');
+  const query='webresourceset?$select=webresourceid,name,displayname,webresourcetype,modifiedon&$filter='+encodeURIComponent(expression)+'&$top=500';
+  const page=await paged(client,query,Math.min(500,ids.length-i));found.push(...page.items);
+ }
+ return found.filter(w=>guid.test(w.webresourceid||'')&&typeof w.name==='string');
 }
 async function inspectMetadata(client,solution){
  if(!client||!guid.test(solution?.id||''))throw Error('Choose a valid environment solution.');
  const query='solutioncomponents?$select=solutioncomponentid,componenttype,objectid,rootcomponentbehavior&$filter=_solutionid_value eq '+solution.id+'&$top=500';
  const result=await paged(client,query,MAX_COMPONENTS);
- return inventoryModel(solution,result.items,result.truncated);
+ let webInfo=[],resourceWarning='';
+ try{webInfo=await lookupWebResources(client,result.items);}catch(error){resourceWarning='Live web resource metadata could not be resolved: '+escName(error.message||'insufficient permission')+'. References remain visible.';}
+ return inventoryModel(solution,result.items,result.truncated,webInfo,resourceWarning);
 }
-root.MightoraDataverseSolutions={context,list,exportUnmanaged,inspectMetadata,inventoryModel,base64File,apiUrl};
+async function readWebResource(client,id,format='uint8array'){
+ if(!client||!guid.test(id||''))throw Error('Invalid web resource reference.');
+ // The content column is returned as base64 by Dataverse. Never evaluate it.
+ const response=await request(client,'webresourceset('+id+')?$select=content');
+ const b64=response.content;if(typeof b64!=='string'||!b64||b64.length>28*1024*1024||!/^[A-Za-z0-9+/\s]*={0,2}$/.test(b64))throw Error('Resource content is missing, invalid or over 20 MB.');
+ const raw=root.atob(b64.replace(/\s/g,''));if(raw.length>20*1024*1024)throw Error('Resource exceeds the 20 MB limit.');
+ const bytes=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i);
+ if(format==='string'){if(bytes.length>1024*1024)throw Error('Source preview exceeds 1 MB.');return new TextDecoder().decode(bytes);}
+ return bytes;
+}
+root.MightoraDataverseSolutions={context,list,exportUnmanaged,inspectMetadata,inventoryModel,base64File,apiUrl,readWebResource,lookupWebResources};
 })(globalThis);

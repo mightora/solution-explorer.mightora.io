@@ -4,7 +4,7 @@
  const norm=v=>String(v??'').replace(/[\r\n\t]+/g,' ').trim();
  const safe=v=>norm(v).slice(0,350);
  const LABELS=()=>root.SolutionCore?.LABELS||{};
- const maxRows=2500;
+ const maxRows=Infinity;
  const sensitive=/password|secret|token|credential|authorization|connectionstring|api[-_]?key|accountkey|clientkey|privatekey|sas/i;
  const table=(title,headers,rows)=>({title,headers,rows:rows.map(r=>r.map(x=>safe(x)))});
  const section=(title,note='',tables=[],paragraphs=[])=>({title,note,tables,paragraphs});
@@ -52,7 +52,7 @@
  }
  function diagram(m,title){
   const names=new Set(com(m,'table').map(c=>c.name));const links=com(m,'relationship').map(c=>({name:c.name,source:c.properties?.source||'',target:c.properties?.target||'',kind:c.properties?.kind||''})).filter(x=>names.has(x.source)&&names.has(x.target));
-  return {title,entities:[...names].slice(0,160),links:links.slice(0,400),note:'Links represent relationships explicitly found in the export; they are not inferred.'};
+  return {title,entities:[...names],links,note:'Links represent relationships explicitly found in the export; they are not inferred. The full ERD also includes external endpoints and isolated tables.'};
  }
  function single(m){if(!m?.components)throw Error('Load a solution (A) before generating a technical report.');
   const typeCounts=Object.entries(m.counts||{}).filter(([,v])=>v).sort((a,b)=>b[1]-a[1]);

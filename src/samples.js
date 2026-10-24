@@ -37,7 +37,7 @@
  const escape=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
  function get(id){const found=items.find(x=>x.id===id);if(!found)throw Error('Unknown sample package: '+id);return found;}
  function files(id){const d=get(id);
-  const entities=d.entities.map(([name,columns])=>`<Entity><Name>${escape(name)}</Name><EntityInfo><entity><LogicalName>${escape(name)}</LogicalName><DisplayName>${escape(name)}</DisplayName></entity></EntityInfo><attributes>${columns.map(([column,type])=>`<attribute PhysicalName="${escape(column)}"><Type>${escape(type)}</Type><DisplayName>${escape(column)}</DisplayName></attribute>`).join('')}</attributes>${d.id==='architecture-tour'&&name==='mt_application'?`<FormXml><forms type="main"><systemform><formid>00000000-0000-4000-8000-000000000088</formid><LocalizedNames><LocalizedName description="Application Review" languagecode="2057"/></LocalizedNames><form><tabs><tab name="general"><labels><label description="Overview" languagecode="2057"/></labels><columns><column><sections><section name="details"><labels><label description="Application details" languagecode="2057"/></labels><rows><row><cell><labels><label description="Reference" languagecode="2057"/></labels><control id="mt_reference" datafieldname="mt_reference"/></cell></row><row><cell><labels><label description="Amount requested" languagecode="2057"/></labels><control id="mt_amount" datafieldname="mt_amount"/></cell></row></rows></section></sections></column><column><sections><section name="assessment"><labels><label description="Assessment" languagecode="2057"/></labels><rows><row><cell><labels><label description="Assessment score" languagecode="2057"/></labels><control id="mt_score" datafieldname="mt_score"/></cell></row></rows></section></sections></column></columns></tab><tab name="notes"><labels><label description="Notes" languagecode="2057"/></labels><columns><column><sections><section name="supporting"><labels><label description="Supporting details" languagecode="2057"/></labels><rows><row><cell><labels><label description="Status" languagecode="2057"/></labels><control id="mt_status" datafieldname="mt_status"/></cell></row></rows></section></sections></column></columns></tab></tabs></form></systemform></forms></FormXml>`:''}</Entity>`).join('');
+  const entities=d.entities.map(([name,columns])=>`<Entity><Name>${escape(name)}</Name><EntityInfo><entity><LogicalName>${escape(name)}</LogicalName><DisplayName>${escape(name)}</DisplayName></entity></EntityInfo><PrimaryIdAttribute>${escape(name)}id</PrimaryIdAttribute><attributes><attribute PhysicalName="${escape(name)}id"><Type>uniqueidentifier</Type><IsPrimaryId>1</IsPrimaryId></attribute>${columns.map(([column,type])=>`<attribute PhysicalName="${escape(column)}"><Type>${escape(type)}</Type><DisplayName>${escape(column)}</DisplayName></attribute>`).join('')}</attributes>${d.id==='architecture-tour'&&name==='mt_application'?`<FormXml><forms type="main"><systemform><formid>00000000-0000-4000-8000-000000000088</formid><LocalizedNames><LocalizedName description="Application Review" languagecode="2057"/></LocalizedNames><form><tabs><tab name="general"><labels><label description="Overview" languagecode="2057"/></labels><columns><column><sections><section name="details"><labels><label description="Application details" languagecode="2057"/></labels><rows><row><cell><labels><label description="Reference" languagecode="2057"/></labels><control id="mt_reference" datafieldname="mt_reference"/></cell></row><row><cell><labels><label description="Amount requested" languagecode="2057"/></labels><control id="mt_amount" datafieldname="mt_amount"/></cell></row></rows></section></sections></column><column><sections><section name="assessment"><labels><label description="Assessment" languagecode="2057"/></labels><rows><row><cell><labels><label description="Assessment score" languagecode="2057"/></labels><control id="mt_score" datafieldname="mt_score"/></cell></row></rows></section></sections></column></columns></tab><tab name="notes"><labels><label description="Notes" languagecode="2057"/></labels><columns><column><sections><section name="supporting"><labels><label description="Supporting details" languagecode="2057"/></labels><rows><row><cell><labels><label description="Status" languagecode="2057"/></labels><control id="mt_status" datafieldname="mt_status"/></cell></row></rows></section></sections></column></columns></tab></tabs></form></systemform></forms></FormXml>`:''}</Entity>`).join('');
   const relationships=d.relationships.map(([name,source,target])=>`<EntityRelationship Name="${escape(name)}"><ReferencingEntityName>${escape(source)}</ReferencingEntityName><ReferencedEntityName>${escape(target)}</ReferencedEntityName><EntityRelationshipType>OneToMany</EntityRelationshipType></EntityRelationship>`).join('');
   const flows=d.flows.map(([name],i)=>`<Workflow WorkflowId="00000000-0000-4000-8000-${String(i+1).padStart(12,'0')}" Name="${escape(name)}"><Category>5</Category><StateCode>1</StateCode></Workflow>`).join('');
   const connectionXml=d.connections.map(([name,connector])=>`<connectionreference><connectionreferencelogicalname>${escape(name)}</connectionreferencelogicalname><connectorid>${escape(connector)}</connectorid></connectionreference>`).join('');
@@ -47,11 +47,42 @@
   const custom=`<?xml version="1.0" encoding="utf-8"?><ImportExportXml><Entities>${entities}</Entities><EntityRelationships>${relationships}</EntityRelationships><Workflows>${flows}</Workflows><WebResources>${webXml}</WebResources><environmentvariabledefinitions>${environmentXml}</environmentvariabledefinitions><connectionreferences>${connectionXml}</connectionreferences>${d.extraXml||''}</ImportExportXml>`;
   const result=new Map([['solution.xml',manifest],['customizations.xml',custom]]);
   for(const [name,actionCount,reference] of d.flows){const flow={name,properties:{displayName:name,connectionReferences:{service:{connectionReferenceLogicalName:reference}},definition:{triggers:{On_dataverse_update:{}},actions:Object.fromEntries(Array.from({length:actionCount},(_,i)=>['Step_'+(i+1),{type:'Compose',inputs:{step:i+1}}]))}}};result.set(`Workflows/${name.replace(/[^a-z0-9]+/gi,'')}.json`,JSON.stringify(flow));}
+  for(const name of d.resources)result.set('WebResources/'+name,'// Fictional documentation example\nvar Mightora = { onLoad: function (executionContext) {\n  const form = executionContext.getFormContext();\n  form.getControl("mt_reference").setDisabled(true);\n}};\n');
+  if(d.id==='architecture-tour'){
+   let details=result.get('customizations.xml');
+   details=details.replace('<form><tabs>', '<form><formLibraries><Library name="mt_application.js"/></formLibraries><events><event name="onload"><Handlers><Handler functionName="Mightora.onLoad" libraryName="mt_application.js" enabled="true" passExecutionContext="true" parameters=""/><Handler functionName="Mightora.legacyLoad" libraryName="mt_missing.js" enabled="false" passExecutionContext="false"/></Handlers></event></events><tabs>');
+   details=details.replace('<Workflow Name="mt_ValidateBusinessRule" Category="2"/>','<Workflow Name="mt_ValidateBusinessRule" Category="2" WorkflowId="00000000-0000-4000-8000-000000000777"><PrimaryEntity>mt_application</PrimaryEntity><ProcessTriggerScope>2</ProcessTriggerScope><StateCode>1</StateCode><Xaml><![CDATA[<Rule><Condition Name="Amount positive" Field="mt_amount" Operator="GreaterThan" Value="0"><Action Name="Require reference" Type="SetRequiredLevel" Field="mt_reference" Value="Required"/></Condition></Rule>]]></Xaml></Workflow><Workflow Name="mt_FormRecommendation" Category="2"><PrimaryEntity>mt_application</PrimaryEntity><ProcessTriggerScope>1</ProcessTriggerScope><ProcessTriggerFormId>00000000-0000-4000-8000-000000000088</ProcessTriggerFormId><StateCode>0</StateCode></Workflow>');
+   details=details.replace('</ImportExportXml>','<CanvasApps><CanvasApp Name="mt_review"/></CanvasApps></ImportExportXml>');
+   result.set('customizations.xml',details);
+   result.set('CanvasApps/mt_review/Src/Review.pa.yaml', `Screens:
+  ReviewScreen:
+    Properties:
+      OnVisible: =Set(reviewReady, true)
+    Children:
+      - Title:
+          Control: Label@2.5.1
+          Properties:
+            Text: ="Application review"
+            X: =20
+            Y: =20
+            Width: =600
+            Height: =50
+      - Approve:
+          Control: Classic/Button@2.2.0
+          Properties:
+            Text: ="Approve application"
+            OnSelect: =Notify("Teaching example", NotificationType.Success)
+            X: =20
+            Y: =90
+            Width: =260
+            Height: =50
+`);
+  }
   // Non-executable demonstration metadata. No real endpoints, credentials or customer data.
   result.set('DEMO-NOT-FOR-IMPORT.txt','FICTIONAL TEACHING PACKAGE ONLY. Not a valid or complete Dataverse import solution. Generated by Mightora Solution Explorer.');
   return result;
  }
- function load(id){const d=get(id),source=files(id);let m=root.SolutionCore.parseSolution(source);if(root.SolutionForms)m=root.SolutionForms.enrich(m,source);if(root.SolutionObjectExplorer)m=root.SolutionObjectExplorer.enrich(m,source);return {...m,flowDetails:root.SolutionFlowExplorer?root.SolutionFlowExplorer.collect(source):[],info:{...m.info,filename:`${id}-demo.zip`},sample:true};}
+ function load(id){const d=get(id),source=files(id);let m=root.SolutionCore.parseSolution(source);if(root.SolutionForms)m=root.SolutionForms.enrich(m,source);if(root.SolutionObjectExplorer)m=root.SolutionObjectExplorer.enrich(m,source);if(root.SolutionWebResources)m.webResources=root.SolutionWebResources.catalog(m,[...source].map(([path,text])=>({path,size:text.length})));if(root.SolutionDetails)m=root.SolutionDetails.enrich(m,source);return {...m,flowDetails:root.SolutionFlowExplorer?root.SolutionFlowExplorer.collect(source):[],info:{...m.info,filename:`${id}-demo.zip`},sample:true};}
  function demo(version){return load(version===2?'project-v2':'project-v1');}
  root.SolutionSamples={catalog:items.map(({id,title,sector,description,managed,version})=>({id,title,sector,description,managed,version})),files,load,demo};
 })(globalThis);

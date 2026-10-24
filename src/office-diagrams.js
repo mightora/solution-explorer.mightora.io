@@ -125,7 +125,7 @@ async function pptx(report,opts){
  const zip=await root.JSZip.loadAsync(await output.arrayBuffer());
  const slides=Object.keys(zip.files).filter(p=>/^ppt\/slides\/slide\d+\.xml$/.test(p));let count=slides.length;
  let pres=await zip.file('ppt/presentation.xml').async('string'),rel=await zip.file('ppt/_rels/presentation.xml.rels').async('string'),ct=await zip.file('[Content_Types].xml').async('string');
- let omitted=0;const limit=400;
+ let omitted=0;const limit=Infinity;
  for(const item of [...visuals.flatMap(v=>pagesFor(v,opts?.theme)),...additionalFormPages(report)]){
   if(count>=limit){omitted++;continue;}
   count++;
