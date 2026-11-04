@@ -45,11 +45,50 @@ test('marks excessive nesting incomplete instead of giving exact-looking totals'
  let a={X:{type:'Compose'}};for(let i=0;i<110;i++)a={Scope:{type:'Scope',actions:a}};
  assert.equal(api.analyze({actions:a}).complete,false);
 });
-test('table-impact demo includes multiple flows and reciprocal table relationships',()=>{
- const flows=api.demo();assert.equal(flows.length,3);
+test('table-impact demo includes reciprocal table relationships and a self-loop',()=>{
+ const flows=api.demo();assert.equal(flows.length,4);
  assert.equal(flows[0].analytics.triggers[0].table,'account');
  assert.equal(flows[0].analytics.writes[0].table,'contact');
  assert.equal(flows[1].analytics.triggers[0].table,'contact');
  assert.equal(flows[1].analytics.writes[0].table,'account');
- assert.equal(flows[2].analytics.triggers.length,0);
+ assert.equal(flows[3].analytics.triggers.length,0);
+ const report=api.trace(api.portfolio(flows));
+ assert.ok(report.loops.some(x=>x.type==='chain'&&x.flowIds.includes(0)&&x.flowIds.includes(1)));
+ assert.ok(report.loops.some(x=>x.type==='self'&&x.flowIds.includes(2)));
+ assert.ok(report.links.some(x=>x.kind==='matched'&&x.table==='contact'&&x.matchedColumns.includes('telephone1')));
+});
+test('a direct column write to a watched trigger column creates a column-matched self-cycle',()=>{
+ const d={triggers:{T:step('SubscribeWebhookTrigger',{'subscriptionRequest/entityname':'account','subscriptionRequest/filteringattributes':'statuscode','subscriptionRequest/message':3})},actions:{W:step('UpdateRecord',{entityName:'account','item/statuscode':0})}};
+ const report=api.trace(api.portfolio([{name:'A',analytics:api.analyze(d)}]));
+ assert.equal(report.loops.length,1);assert.equal(report.loops[0].type,'self');
+ assert.equal(report.links[0].kind,'matched');assert.deepEqual([...report.links[0].matchedColumns],['statuscode']);
+});
+test('nonmatching modified columns do not cause a retrigger, even on the same table',()=>{
+ const rows=api.portfolio([{
+  name:'A',analytics:api.analyze({triggers:{T:step('SubscribeWebhookTrigger',{'subscriptionRequest/entityname':'account','subscriptionRequest/filteringattributes':'name','subscriptionRequest/message':3})},actions:{W:step('UpdateRecord',{entityName:'account','item/telephone1':'not-retained'})}})
+ }]);
+ const report=api.trace(rows);assert.equal(report.links.length,0);assert.equal(report.loops.length,0);assert.equal(report.columnMismatches,1);
+ assert.ok(!JSON.stringify(rows).includes('not-retained'));
+});
+test('an unfiltered update, an unresolved body, and a create event remain potential, not definite column matches',()=>{
+ const trigger=(cols,msg=3)=>step('SubscribeWebhookTrigger',{'subscriptionRequest/entityname':'account','subscriptionRequest/filteringattributes':cols,'subscriptionRequest/message':msg});
+ const rows=api.portfolio([
+  {name:'No filter',analytics:api.analyze({triggers:{T:trigger(undefined)},actions:{W:step('UpdateRecord',{entityName:'account','item/name':'x'})}})},
+  {name:'Dynamic body',analytics:api.analyze({triggers:{T:trigger('name')},actions:{W:step('UpdateRecord',{entityName:'account',item:'@body("x")'})}})},
+  {name:'Create',analytics:api.analyze({triggers:{T:trigger('name',1)},actions:{W:step('CreateRecord',{entityName:'account','item/otherfield':'x'})}})}
+ ]);
+ const links=api.trace(rows).links;
+ assert.ok(links.some(x=>x.from===0&&x.to===0&&x.kind==='unfiltered'));
+ assert.ok(links.some(x=>x.from===1&&x.to===1&&x.kind==='possible'));
+ assert.ok(links.some(x=>x.from===2&&x.to===2&&x.kind==='event'));
+});
+test('multi-flow feedback paths require compatible change types and environments',()=>{
+ const t=(table,msg=3)=>step('SubscribeWebhookTrigger',{'subscriptionRequest/entityname':table,'subscriptionRequest/message':msg});
+ const f=(name,triggerTable,writeTable)=>({name,analytics:api.analyze({triggers:{T:t(triggerTable)},actions:{W:step('UpdateRecord',{entityName:writeTable,'item/name':'x'})}})});
+ const rows=api.portfolio([f('A','account','contact'),f('B','contact','account')]);
+ const report=api.trace(rows);assert.ok(report.loops.some(x=>x.type==='chain'&&x.links.length===2));
+ const nonMatch=api.portfolio([{name:'A',analytics:api.analyze({triggers:{T:t('account',2)},actions:{W:step('UpdateRecord',{entityName:'account','item/name':'x'})}})}]);
+ assert.equal(api.trace(nonMatch).links.length,0);
+ const separate=api.portfolio([{name:'A',analytics:api.analyze({triggers:{T:t('account')},actions:{W:step('UpdateRecordWithOrganization',{entityName:'account',organization:'ENVIRONMENT_URL','item/name':'x'})}})}]);
+ assert.equal(api.trace(separate).links.length,0);
 });

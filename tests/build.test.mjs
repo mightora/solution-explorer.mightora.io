@@ -34,11 +34,13 @@ test('all teaching ZIPs are generated from shared definitions',async()=>{
   assert.match(await zip.file('DEMO-NOT-FOR-IMPORT.txt').async('string'),/not/i);
  }
 });
-test('online and offline UIs include sample gallery and recovery guidance',()=>{
+test('online and offline UIs include sample gallery and omit managed-to-unmanaged recovery section',()=>{
  const online=fs.readFileSync(path.join(dir,'index.html'),'utf8');
  const offline=fs.readFileSync(path.join(dir,'downloads/solution-explorer-offline.html'),'utf8');
  for(const content of [online,offline]){
-  for(const id of ['samples-gallery','comparison-context','download-recovery','export-diff-csv'])assert.ok(content.includes(id));
+  for(const id of ['samples-gallery','comparison-context','export-diff-csv'])assert.ok(content.includes(id));
+  assert.ok(!content.includes('id="managed"'));
+  assert.ok(!content.includes('id="download-recovery"'));
  }
 });
 
@@ -200,7 +202,7 @@ test('full web resource inspector and complete relationship map are bundled ever
 test('flow analytics and dependency views ship in all editions',()=>{
  for(const file of ['index.html','downloads/solution-explorer-offline.html','dataverse/solution-explorer.html']){
   const content=fs.readFileSync(path.join(dir,file),'utf8');
-  for(const id of ['flow-analytics','flow-analytics-charts','flow-analytics-triggers','flow-analytics-writes','flow-analytics-network'])assert.ok(content.includes('id="'+id+'"'));
+  for(const id of ['flow-analytics','flow-analytics-charts','flow-analytics-loops','flow-analytics-retriggers','flow-analytics-triggers','flow-analytics-writes','flow-analytics-network'])assert.ok(content.includes('id="'+id+'"'));
   if(file!=='index.html')for(const module of ['flow-analytics.js','flow-analytics-ui.js'])assert.ok(content.includes(fs.readFileSync(path.join(dir,'src',module),'utf8').replaceAll('</script','<\\/script')));
  }
 });

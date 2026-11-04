@@ -20,11 +20,13 @@ Exports from different Dataverse versions can have different structures. Please 
 The six built-in ZIP examples are fictional exercises using export-like XML structures. They are not genuine Dataverse exports, do not contain complete dependency metadata, and cannot be imported. The offline application generates the same sample ZIPs entirely in the browser.
 
 ## Managed solution conversion
-Dataverse does not support simply converting managed packages to unmanaged by changing ZIP flags or repacking them. The recovery checklist is an assessment, not a converter or a means of bypassing managed properties. Obtain the original unmanaged source or rebuild components with appropriate rights and tests.
+Dataverse does not support simply converting managed packages to unmanaged by changing ZIP flags or repacking them. Solution Explorer does not offer conversion or a recovery-checklist panel. Obtain the original unmanaged source or rebuild components with appropriate rights and tests.
 
 ## Flow Explorer limitations
 
 The flow map is a **static interpretation** of exported Power Automate Workflow Definition Language (WDL), not a live Power Automate designer. It cannot execute or validate flows, show run histories, discover runtime values, or guarantee that every connector or custom action is supported. Dashed diagram links indicate containment; solid links represent explicit `runAfter` links or trigger entries. There is no inferred serial sequence between independent actions. In the structural flow map, expressions are described by function names without arguments and input/output field names are allowlisted. Raw packaged definitions are separately included as editable source and may contain sensitive literals. Flow map shows up to 140 nodes (inventory up to 250); nested actions are handled to a maximum depth of 20. Standard `Workflows/*.json` and selected `ClientData` XML variants are supported; other packaging formats may have no extractable definitions.
+
+The **flow retrigger analysis** is also static and limited to supported Dataverse create, update, upsert and delete actions and row-change triggers. A matching column means the column is included in the update payload, not that the value changed or that any particular row is updated. Trigger row filters, scope, flow conditions, row identity, privileges, concurrency and runtime behaviour can prevent a candidate path from firing. Unresolved column bodies and unfiltered triggers are marked as possible; a known non-overlapping set of update/trigger columns is excluded. Column filters do not restrict create/delete events. Only same-environment, resolved table references are linked. Indirect writes through HTTP, custom actions, plug-ins or child flows are outside this analysis. Cycle groups show candidates, not proven infinite loops.
 
 ## Expanded Dataverse component coverage
 

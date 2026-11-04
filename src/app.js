@@ -47,7 +47,7 @@
    finally{state.loading=false;$(id+'-picker').disabled=false;}
  }
  function bindDrop(elementId,slot){const el=$(elementId);for(const eventName of ['dragenter','dragover'])el.addEventListener(eventName,e=>{e.preventDefault();el.classList.add('dragging');});for(const eventName of ['dragleave','drop'])el.addEventListener(eventName,e=>{e.preventDefault();el.classList.remove('dragging');});el.addEventListener('drop',e=>{const file=e.dataTransfer?.files?.[0];if(file)handle(file,slot);});}
- function render(){renderOverview();renderInventory();renderDependencies();renderDiagram();renderDiff();renderManaged();renderWarnings();document.dispatchEvent(new CustomEvent('solution-workspace-change',{detail:{a:state.a,b:state.b}}));}
+ function render(){renderOverview();renderInventory();renderDependencies();renderDiagram();renderDiff();renderWarnings();document.dispatchEvent(new CustomEvent('solution-workspace-change',{detail:{a:state.a,b:state.b}}));}
  function renderOverview(){const m=state.a;
    $('solution-subtitle').textContent=m?`${m.info.name||m.info.filename||'Solution'} · v${m.info.version||'?'} · ${m.components.length.toLocaleString()} discovered components`:'Your architecture, one clear picture.';
    for(const type of ['table','column','relationship','flow','webresource','environment'])$('count-'+type).textContent=m?m.counts[type].toLocaleString():'—';
@@ -120,13 +120,6 @@
    $('dialog-content').innerHTML=`<p class="dialog-note">${html(label(c.type))} · ${html(c.status)} — A is baseline; B is newer.</p><div class="table-scroller"><table class="property-table property-diff"><thead><tr><th>Property</th><th>A · Baseline</th><th>B · Newer</th></tr></thead><tbody>${names.map(k=>`<tr class="${old[k]!==now[k]?'property-changed':''}"><th>${html(k)}</th><td>${html(Object.hasOwn(old,k)?old[k]:'—')}</td><td>${html(Object.hasOwn(now,k)?now[k]:'—')}</td></tr>`).join('')||'<tr><td colspan="3">No extracted properties.</td></tr>'}</tbody></table></div><p class="dialog-note">Only supported exported metadata is compared. Unextracted source or binary differences may not be shown.</p>`;
    $('component-dialog').showModal();
  }
- function renderManaged(){
-   const m=state.a,assessment=SolutionCore.assessManaged(m);
-   $('managed-result-title').textContent=assessment.title;
-   $('managed-state').textContent=assessment.status.toUpperCase();
-   $('managed-steps').innerHTML=assessment.steps.map(step=>`<li>${html(step)}</li>`).join('');
-   $('download-recovery').disabled=!m;
- }
  function propertyChange(c){const a=c.before||{},b=c.properties||{},keys=new Set([...Object.keys(a),...Object.keys(b)]);return [...keys].filter(k=>a[k]!==b[k]).slice(0,3).map(k=>`${k}: ${String(a[k]??'—').slice(0,22)} → ${String(b[k]??'—').slice(0,22)}`).join('; ')||'Metadata changed';}
  function renderWarnings(){const items=[...(state.a?.warnings||[]),...(state.b?.warnings||[]).map(w=>'Comparison: '+w)];$('parse-warnings').hidden=!items.length;$('warning-list').innerHTML=items.map(w=>`<li>${html(w)}</li>`).join('');}
  function refreshNetwork(){let entries=[];try{entries=performance.getEntriesByType('resource')||[];}catch{}
@@ -151,7 +144,6 @@
  $('diff-search').addEventListener('input',renderDiff);$('diff-filter').addEventListener('change',renderDiff);
  for(const tab of document.querySelectorAll('.diagram-tab'))tab.addEventListener('click',()=>{state.diagram=tab.dataset.diagram;renderDiagram();});
  $('swap-solutions').addEventListener('click',()=>{if(!state.a||!state.b)return;[state.a,state.b]=[state.b,state.a];[archives.a,archives.b]=[archives.b,archives.a];$('primary-label').textContent=state.a.info.filename||state.a.info.name||'Baseline';$('compare-label').textContent=state.b.info.filename||state.b.info.name||'Newer';status('Comparison direction reversed. A is now the baseline.');render();});
- $('download-recovery').addEventListener('click',()=>{if(!state.a)return;const m=state.a,a=SolutionCore.assessManaged(m);const out=['# Dataverse solution recovery assessment','',`Solution: ${m.info.name||'Unknown'}`,`Version: ${m.info.version||'Unknown'}`,`Managed: ${m.info.managed===null?'Unconfirmed':m.info.managed?'Yes':'No'}`,'','## Guidance',...a.steps.map((step,i)=>`${i+1}. ${step}`),'','## Discovered component inventory (not full source)',...m.components.map(c=>`- ${c.type}: ${c.name}`),'','## Important limitations','No managed-to-unmanaged conversion was performed. Do not modify the ZIP managed flag.','Official guidance: https://learn.microsoft.com/power-platform/alm/solution-packager-tool'];download('managed-solution-recovery.md',out.join('\n'),'text/markdown');});
  $('download-json').addEventListener('click',()=>{if(state.a)download('solution-inventory.json',JSON.stringify({...state.a,source:'Mightora Solution Explorer'},null,2),'application/json');});
  $('download-csv').addEventListener('click',()=>{if(state.a)download('solution-components.csv',csv([['Type','Name','Description','Properties'],...state.a.components.map(c=>[c.type,c.name,c.description,JSON.stringify(c.properties)])]),'text/csv');});
  $('export-svg').addEventListener('click',()=>{if(state.a)download(`solution-${state.diagram}.svg`,SolutionDiagrams.build(state.a,state.diagram),'image/svg+xml');});

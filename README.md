@@ -18,9 +18,9 @@ Live site (once deployed): https://solution-explorer.mightora.io
 - Search and filter components, inspect properties, export inventories as **JSON or CSV**.
 - Produce self-contained **SVG** diagrams and **Mermaid** text for a data model, component landscape or flow integrations.
 - Load a second ZIP for **component-level change detection** (added, removed, changed, unchanged) and export a change report.
-- Explore **five fictional teaching ZIPs**, including project tracker versions v1.0/v1.1 for comparison and a deliberately managed example for recovery guidance. Each example can be loaded directly or downloaded to test ZIP ingestion; builds also publish them under `examples/`.
+- Explore **fictional teaching ZIPs**, including project tracker versions v1.0/v1.1 for comparison and a managed-package example for inspection coverage. Each example can be loaded directly or downloaded to test ZIP ingestion; builds also publish them under `examples/`.
 - Compare **two independently loaded ZIPs (A → B)**, drill into before/after properties, reverse direction and export JSON/CSV change reports.
-- Assess managed solutions with an **exportable recovery checklist**. This does not convert or create an unmanaged import package.
+- Analyse **Power Automate complexity and table impact**: action/nesting charts, Dataverse trigger and write tables with available column names, table → flow → table mapping, and candidate retrigger paths. Self-trigger and multi-flow feedback cycles are highlighted, especially where a written column overlaps another flow's selected trigger columns.
 - Download **fully offline HTML** or a **standalone offline ZIP**, generated from the same sources as the online app.
 - Inspect resource origins using the **Network Transparency** panel and your browser Developer Tools.
 
@@ -32,7 +32,7 @@ For authentic Microsoft-created solutions, use [Microsoft Copilot Studio Samples
 
 ## Managed/unmanaged limitation
 
-**Managed solutions cannot be directly converted into unmanaged solutions by editing a ZIP or using SolutionPackager.** Microsoft's supported ALM workflow is to retain the original unmanaged solution in the development environment, then export it as required. This tool offers read-only analysis, a component inventory, and a recovery assessment/checklist to help locate original source or plan an authorised rebuild. It never produces a purported converted ZIP. See [Microsoft's SolutionPackager documentation](https://learn.microsoft.com/power-platform/alm/solution-packager-tool).
+**Managed solutions cannot be directly converted into unmanaged solutions by editing a ZIP or using SolutionPackager.** Microsoft's supported ALM workflow is to retain the original unmanaged solution in the development environment, then export it as required. Solution Explorer retains read-only support for managed exports but no longer includes a dedicated managed-to-unmanaged recovery panel. See [Microsoft's SolutionPackager documentation](https://learn.microsoft.com/power-platform/alm/solution-packager-tool).
 
 ## Local development
 
