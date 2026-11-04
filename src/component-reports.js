@@ -3,11 +3,13 @@
 'use strict';
 const reports=root.SolutionReports,single=reports.single,comparison=reports.comparison;
 const tab=(title,headers,rows)=>({title,headers,rows}),section=(title,note='',tables=[],paragraphs=[],codeBlocks=[])=>({title,note,tables,paragraphs,codeBlocks});
+const sensitive=/password|secret|token|credential|authorization|connectionstring|api[-_]?key|accountkey|clientkey|privatekey|sas/i;
+const safeProperties=record=>Object.entries(record||{}).filter(([key])=>!sensitive.test(key));
 const fields=f=>(f.tabs||[]).flatMap(t=>(t.sections||[]).flatMap(s=>(s.fields||[]).map(c=>[t.name,s.name,c.label,c.field,c.kind])));
 function itemSection(m,c,side=''){
  const d=root.SolutionDetails.component(m,c.id),tables=[],paragraphs=[],blocks=[];const title=(side?side+' / ':'')+c.name;
- tables.push(tab('Component metadata',['Property','Value'],[['Family',root.SolutionCore.LABELS[c.type]||c.type],['Coverage',c.coverage||'inspected'],['Source',c.source||m.objectDetails?.[c.id]?.source||'Metadata inventory'],...Object.entries(c.properties||{})]));
- const children=[];function flatten(nodes,path=''){for(const n of nodes||[]){const next=path?path+' / '+n.name:n.name;children.push([next,n.kind,Object.entries(n.properties||{}).map(([k,v])=>k+': '+v).join('\n')]);flatten(n.children,next);}}
+ tables.push(tab('Component metadata',['Property','Value'],[['Family',root.SolutionCore.LABELS[c.type]||c.type],['Coverage',c.coverage||'inspected'],['Source',c.source||m.objectDetails?.[c.id]?.source||'Metadata inventory'],...safeProperties(c.properties)]));
+ const children=[];function flatten(nodes,path=''){for(const n of nodes||[]){const next=path?path+' / '+n.name:n.name;children.push([next,n.kind,safeProperties(n.properties).map(([k,v])=>k+': '+v).join('\n')]);flatten(n.children,next);}}
  flatten(d?.children);if(children.length)tables.push(tab('Contained component metadata',['Object path','Kind','Properties'],children));
  if(d?.form){
   const f=d.form;tables.push(tab('Form layout',['Tab','Section','Label','Column','Control'],fields(f)));
@@ -30,6 +32,24 @@ function itemSection(m,c,side=''){
   tables.push(tab('Rule triggers',['Event','Column','Form ID','Scope metadata'],r.triggers.map(t=>[t.event,t.field,t.formId,t.scope])));
   tables.push(tab('Rule conditions and actions',['Node','Kind','Parent node','Definition'],r.steps.map(s=>[s.name,s.kind,String(s.parent),s.detail])));
   if(!r.steps.length)paragraphs.push('No supported condition or action nodes were decoded. Inspect the full packaged definition below where available.');
+ }
+ if(c.type==='flow'){
+  const f=(m.flowDetails||[]).find(f=>f.name===c.name);
+  if(f){
+   tables.push(tab('Power Automate triggers and actions',['Step','Type','Branch','Depth','Parent','Connector','Operation','Explicit runAfter','Input fields','Output fields','Expression functions','Secure inputs','Secure outputs'],f.steps.map(s=>[
+    s.name,s.type,s.branch,String(s.depth??0),s.parent??'—',s.connector||'—',s.operation||'—',
+    Object.entries(s.runAfter||{}).map(([name,states])=>`${name} (${states.join(', ')})`).join('; ')||'None',
+    (s.inputFields||[]).join(', '),(s.outputFields||[]).join(', '),(s.expressionFunctions||[]).join(', '),s.secureInputs?'Yes':'No',s.secureOutputs?'Yes':'No'
+   ])));
+   tables.push(tab('Flow dependencies',['From step','To step','Relationship','Evidence'],(f.edges||[]).map(e=>[f.steps.find(s=>s.id===e.from)?.name||e.from,f.steps.find(s=>s.id===e.to)?.name||e.to,e.kind,e.label||'—'])));
+   const a=f.analytics;
+   if(a){
+    tables.push(tab('Dataverse change triggers',['Step','Table','Change event','Monitored columns','Column filter status','Environment'],(a.triggers||[]).map(t=>[t.step,t.table||'Unresolved',t.change,(t.columns||[]).join(', ')||'—',t.columnsStatus,t.environment])));
+    tables.push(tab('Dataverse table writes',['Step','Table','Operation','Written columns','Column resolution','Environment'],(a.writes||[]).map(w=>[w.step,w.table||'Unresolved',w.operation,(w.columns||[]).join(', ')||'—',w.columnsStatus,w.environment])));
+    if(!a.complete)paragraphs.push('The flow analyser reached an inspection limit. Verify uninspected actions in the original definition.');
+   }
+   paragraphs.push(...(f.warnings||[]));
+  }
  }
  for(const s of d?.sources||[])blocks.push({...s,title:s.kind+' / '+s.path});
  return section(title,'Editable component documentation derived from the selected solution export.',tables,paragraphs,blocks);

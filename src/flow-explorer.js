@@ -1,11 +1,13 @@
 /* Mightora Flow Explorer: local-only, non-executable WDL inspection. No secret values are retained. */
 (function(root){
 "use strict";
-const LIMIT=250;
+// Permit large packaged flows to reach the Office exports. Keep a generous
+// resource-safety boundary and report it explicitly rather than silently omit.
+const LIMIT=5000;
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const short=(s,n=150)=>String(s??"").replace(/[\r\n\t]/g," ").slice(0,n);
 const sensitive=/password|token|secret|authorization|cookie|credential|connectionstring|access[_-]?key|client[_-]?secret|sas|accountkey|apikey/i;
-const keys=o=>o&&typeof o==="object"&&!Array.isArray(o)?Object.keys(o).filter(k=>!sensitive.test(k)).slice(0,35):[];
+const keys=o=>o&&typeof o==="object"&&!Array.isArray(o)?Object.keys(o).filter(k=>!sensitive.test(k)):[];
 function functionsOf(x){
  const found=new Set();
  function visit(v,depth){
@@ -20,14 +22,14 @@ function inspect(value,defaultName="Exported flow",source="Workflow JSON"){
  const def=props.definition||value?.definition||(props.triggers&&props.actions?props:null);
  if(!def||typeof def!=="object"||Array.isArray(def))return null;
  const steps=[],edges=[],warnings=[];
- const connections=Object.entries(props.connectionReferences||props.connectionreferences||{}).slice(0,80).map(([k,v])=>({
+ const connections=Object.entries(props.connectionReferences||props.connectionreferences||{}).map(([k,v])=>({
   alias:short(k),connector:short(v?.api?.name||v?.api?.id||v?.connectionReferenceLogicalName||"",180)
  }));
  function append(name,body,branch,parent,depth,kind="Action"){
-  if(steps.length>=LIMIT){if(!warnings.includes("Only the first 250 steps are mapped."))warnings.push("Only the first 250 steps are mapped.");return null;}
+  if(steps.length>=LIMIT){if(!warnings.includes(`Only the first ${LIMIT} steps are mapped due to the inspection safety limit.`))warnings.push(`Only the first ${LIMIT} steps are mapped due to the inspection safety limit.`);return null;}
   const id="s"+steps.length,host=body?.inputs?.host||{};
   const after={};
-  for(const [name,states] of Object.entries(body?.runAfter||{}).slice(0,40))after[short(name)]=Array.isArray(states)?states.map(s=>short(s,30)).slice(0,8):[];
+  for(const [name,states] of Object.entries(body?.runAfter||{}))after[short(name)]=Array.isArray(states)?states.map(s=>short(s,30)):[];
   const expressionFunctions=[...new Set([
     ...functionsOf(body?.inputs),...functionsOf(body?.expression),...functionsOf(body?.foreach),...functionsOf(body?.until)
   ])].sort();
@@ -42,7 +44,8 @@ function inspect(value,defaultName="Exported flow",source="Workflow JSON"){
   return item;
  }
  function walk(items,parent,branch,depth,entry){
-  if(!items||typeof items!=="object"||depth>20||Array.isArray(items))return;
+  if(!items||typeof items!=="object"||Array.isArray(items))return;
+  if(depth>100){if(!warnings.includes('Nested action depth exceeds the 100-level inspection safety limit.'))warnings.push('Nested action depth exceeds the 100-level inspection safety limit.');return;}
   const local=new Map(),records=Object.entries(items).slice(0,LIMIT);
   records.forEach(([name,body])=>{if(body&&typeof body==="object"){const n=append(name,body,branch,parent,depth);if(n)local.set(name,n);}});
   for(const [name,body] of records){
@@ -58,7 +61,7 @@ function inspect(value,defaultName="Exported flow",source="Workflow JSON"){
    if(body.default?.actions)walk(body.default.actions,n.id,"Default",depth+1,n.id);
   }
  }
- const triggers=Object.entries(def.triggers||{}).slice(0,30);
+ const triggers=Object.entries(def.triggers||{});
  const triggerIds=[];
  for(const [name,body] of triggers){const n=append(name,body,"Trigger",null,0,"Trigger");if(n)triggerIds.push(n.id);}
  walk(def.actions||{},null,"Main",0,triggerIds.length===1?triggerIds[0]:null);
@@ -80,17 +83,17 @@ function collect(files){
   if(!/(?:^|\/)(?:workflows|modernflows)\//i.test(path)||!/\.json$/i.test(path))continue;
   try{const f=fromJSON(body,path.split("/").pop().replace(/\.json$/i,""));f.source=short(path,210);list.push(f);}catch{}
  }
- if(list.length)return list.slice(0,100);
+ if(list.length)return list;
  for(const [path,xmlText] of files){
   if(!/\.xml$/i.test(path)||!/(customizations|workflows)/i.test(path))continue;
   let doc;try{doc=new DOMParser().parseFromString(xmlText,"application/xml");}catch{continue;}
-  for(const wf of Array.from(doc.getElementsByTagName("*")).filter(n=>n.localName?.toLowerCase()==="workflow").slice(0,90)){
+  for(const wf of Array.from(doc.getElementsByTagName("*")).filter(n=>n.localName?.toLowerCase()==="workflow")){
    const node=Array.from(wf.getElementsByTagName("*")).find(n=>n.localName?.toLowerCase()==="clientdata");
    if(!node?.textContent)continue;
    try{const f=fromJSON(node.textContent,wf.getAttribute("Name")||"Workflow");f.source=short(path);if(!list.some(x=>x.name===f.name))list.push(f);}catch{}
   }
  }
- return list.slice(0,100);
+ return list;
 }
 function diagram(flow){
  if(!flow)return "";

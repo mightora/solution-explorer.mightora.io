@@ -7,12 +7,12 @@ for(const file of ['flow-analytics','flow-explorer'])vm.runInNewContext(fs.readF
 const api=ctx.SolutionFlowAnalytics;
 const step=(op,parameters,connector='shared_commondataserviceforapps')=>({type:'OpenApiConnection',inputs:{host:{operationId:op,apiId:connector},parameters}});
 const def=()=>({triggers:{Changed:step('SubscribeWebhookTrigger',{'subscriptionRequest/entityname':'account','subscriptionRequest/filteringattributes':'name,telephone1','subscriptionRequest/message':3})},actions:{Loop:{type:'Foreach',actions:{Condition:{type:'If',actions:{Write:step('UpdateRecord',{entityName:'contacts','item/firstname':'PRIVATE_VALUE','item/parentcustomerid_account@odata.bind':'PRIVATE_LOOKUP'})},else:{actions:{Create:step('CreateRecord',{entityName:'accounts',item:{name:'SECRET'}})}}}}},Switch:{type:'Switch',cases:{a:{actions:{A:{type:'Compose'}}}},default:{actions:{B:{type:'Scope',actions:{C:{type:'Compose'}}}}}}}});
-test('counts every branch and container independently of existing map cap',()=>{
+test('counts every branch and container and maps large flows for export',()=>{
  const f=ctx.SolutionFlowExplorer.fromJSON({definition:def()});
  assert.equal(f.analytics.actionCount,8);assert.equal(f.analytics.maxDepth,2);assert.equal(f.analytics.complete,true);
  const big={actions:Object.fromEntries(Array.from({length:400},(_,i)=>['A'+i,{type:'Compose'}]))};
  const large=ctx.SolutionFlowExplorer.fromJSON({definition:big});
- assert.equal(large.actionCount,250);assert.equal(large.analytics.actionCount,400);
+ assert.equal(large.actionCount,400);assert.equal(large.analytics.actionCount,400);
 });
 test('maps subscription columns and create/update writes without retaining values',()=>{
  const a=api.analyze(def());assert.equal(a.triggers[0].table,'account');assert.equal(a.triggers[0].change,'Modified');

@@ -2,7 +2,8 @@
 (function(root){
  'use strict';
  const norm=v=>String(v??'').replace(/[\r\n\t]+/g,' ').trim();
- const safe=v=>norm(v).slice(0,350);
+ // Export content is paginated by the Office serializers; do not truncate values here.
+ const safe=v=>norm(v);
  const LABELS=()=>root.SolutionCore?.LABELS||{};
  const maxRows=Infinity;
  const sensitive=/password|secret|token|credential|authorization|connectionstring|api[-_]?key|accountkey|clientkey|privatekey|sas/i;
@@ -47,7 +48,7 @@
   if(com(m,'relationship').length===0)notes.push('No relationships were identified. This is not evidence that the data model has no relationships.');
   if(com(m,'column').length===0)notes.push('No column definitions were extracted.');
   if(m?.coverage?.discovered||m?.coverage?.unsupported||m?.coverage?.referenced)notes.push('Some entries were discovered or referenced without complete definitions.');
-  if(m?.warnings?.length)notes.push(...m.warnings.slice(0,35).map(safe));
+  if(m?.warnings?.length)notes.push(...m.warnings.map(safe));
   return notes;
  }
  function diagram(m,title){
@@ -110,7 +111,7 @@
    section('Indicative change-impact review','These are review prompts triggered by changed metadata, not verified breaking changes or production incidents.',[table('Review flags',['Level','Why flagged','Recommended validation'],impact.length?impact:[['Information','No review rules triggered','Still perform standard platform deployment and regression tests.']])]),
    section('Completeness and limitations','Both exports may omit metadata or reference components outside the package.',[
     table('Inspection coverage — A',['Coverage','Count'],coverage(a)),table('Inspection coverage — B',['Coverage','Count'],coverage(b)),
-    table('Review notes',['Origin','Note'],[...(a.warnings||[]).map(x=>['A',safe(x)]),...(b.warnings||[]).map(x=>['B',safe(x)])].slice(0,80))
+    table('Review notes',['Origin','Note'],[...(a.warnings||[]).map(x=>['A',safe(x)]),...(b.warnings||[]).map(x=>['B',safe(x)])])
    ],['Deployment recommendation: review removed components and database migrations, test critical flows and plug-ins, validate security roles and connector/environment configuration, and document the rollback path.'])
   ];
   if(changes.length>maxRows)sections.at(-1).paragraphs.push(`The report caps each detailed table at ${maxRows} rows. The complete extracted difference remains available in Explorer JSON/CSV export.`);

@@ -7,26 +7,26 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const clip=(s,n=150)=>String(s??'').replace(/[\r\n\t]+/g,' ').slice(0,n);
 const rawTable=(rows)=>{
  const count=rows[0]?.length||1,w=Math.floor(9500/count);
- return `<w:tbl><w:tblPr><w:tblW w:type="dxa" w:w="9500"/><w:tblBorders><w:top w:val="single" w:sz="6" w:color="D5DEED"/><w:bottom w:val="single" w:sz="6" w:color="D5DEED"/><w:insideH w:val="single" w:sz="4" w:color="E7EBF5"/><w:insideV w:val="single" w:sz="4" w:color="E7EBF5"/></w:tblBorders></w:tblPr><w:tblGrid>${rows[0].map(()=>`<w:gridCol w:w="${w}"/>`).join('')}</w:tblGrid>${rows.map((row,i)=>`<w:tr>${row.map(v=>`<w:tc><w:tcPr><w:tcW w:w="${w}" w:type="dxa"/><w:shd w:fill="${i?'FFFFFF':'E9E6FC'}"/></w:tcPr><w:p><w:r><w:rPr>${i===0?'<w:b/>':''}</w:rPr><w:t>${esc(clip(v,350))}</w:t></w:r></w:p></w:tc>`).join('')}</w:tr>`).join('')}</w:tbl>`;
+ return `<w:tbl><w:tblPr><w:tblW w:type="dxa" w:w="9500"/><w:tblBorders><w:top w:val="single" w:sz="6" w:color="D5DEED"/><w:bottom w:val="single" w:sz="6" w:color="D5DEED"/><w:insideH w:val="single" w:sz="4" w:color="E7EBF5"/><w:insideV w:val="single" w:sz="4" w:color="E7EBF5"/></w:tblBorders></w:tblPr><w:tblGrid>${rows[0].map(()=>`<w:gridCol w:w="${w}"/>`).join('')}</w:tblGrid>${rows.map((row,i)=>`<w:tr>${row.map(v=>`<w:tc><w:tcPr><w:tcW w:w="${w}" w:type="dxa"/><w:shd w:fill="${i?'FFFFFF':'E9E6FC'}"/></w:tcPr><w:p><w:r><w:rPr>${i===0?'<w:b/>':''}</w:rPr><w:t xml:space="preserve">${esc(String(v??''))}</w:t></w:r></w:p></w:tc>`).join('')}</w:tr>`).join('')}</w:tbl>`;
 };
-const para=(s,style='')=>`<w:p>${style?`<w:pPr><w:pStyle w:val="${style}"/></w:pPr>`:''}<w:r><w:t xml:space="preserve">${esc(clip(s,1500))}</w:t></w:r></w:p>`;
+const para=(s,style='')=>`<w:p>${style?`<w:pPr><w:pStyle w:val="${style}"/></w:pPr>`:''}<w:r><w:t xml:space="preserve">${esc(String(s??''))}</w:t></w:r></w:p>`;
 function diagramWord(v){
  let xml=para((v.side?v.side+' — ':'')+v.title,'Heading2')+para(v.note||'Diagram based on extracted metadata, not live system behaviour.');
  if(v.kind==='flow'){
-  const model=root.SolutionFlowExplorer.layout(v,250),steps=model.rows.filter(r=>r.kind==='step');
+  const model=root.SolutionFlowExplorer.layout(v,Infinity),steps=model.rows.filter(r=>r.kind==='step');
   if(!steps.length)return xml+para('No mapped flow steps in this export.');
   // Branch-aware visual path. The table is intentionally editable in Word.
   const rows=[['CONTAINER / BRANCH','ACTION PATH','KIND','EXPLICIT runAfter']];
-  for(const r of steps){const s=r.step;rows.push([clip((r.depth?'↳ '.repeat(Math.min(r.depth,4)):'')+s.branch,75),clip(s.name,110),clip(s.type,45),Object.entries(s.runAfter||{}).map(([k,st])=>k+' ['+st.join(', ')+']').join('; ')||'No explicit prerequisite']);}
+  for(const r of steps){const s=r.step;rows.push([(r.depth?'↳ '.repeat(r.depth):'')+s.branch,s.name,s.type,Object.entries(s.runAfter||{}).map(([k,st])=>k+' ['+st.join(', ')+']').join('; ')||'No explicit prerequisite']);}
   xml+=rawTable(rows)+para('Connected steps may also appear inside conditional branches, loops or scopes. No implied sequencing between independent actions.');
   if(v.warnings?.length)xml+=para('Extraction warnings: '+v.warnings.join('; '));
   return xml;
  }
  if(!v.nodes?.length)return xml+para('No supported entities for this diagram.');
- xml+=rawTable([['OBJECT','COMPONENT FAMILY / STATUS'],...v.nodes.map(n=>[n.label,clip(n.kind+(n.status?' · '+n.status:''),120)])]);
+  xml+=rawTable([['OBJECT','COMPONENT FAMILY / STATUS'],...v.nodes.map(n=>[n.label,n.kind+(n.status?' · '+n.status:'')])]);
  if(v.edges?.length){const labels=new Map(v.nodes.map(n=>[n.id,n.label]));
   xml+=para('Editable connection map — source → link → target');
-  xml+=rawTable([['SOURCE','RELATIONSHIP / EVIDENCE','TARGET'],...v.edges.map(e=>[labels.get(e.from)||e.from,clip(e.label||e.kind||'Link',90),labels.get(e.to)||e.to])]);
+  xml+=rawTable([['SOURCE','RELATIONSHIP / EVIDENCE','TARGET'],...v.edges.map(e=>[labels.get(e.from)||e.from,e.label||e.kind||'Link',labels.get(e.to)||e.to])]);
  }else xml+=para('The export did not provide reliable edges for this view. No relationships were invented.');
  return xml;
 }
@@ -84,7 +84,7 @@ function slide(title,subtitle,items,links,theme,num){
 function pagesFor(v,theme){
  const pages=[];
  if(v.kind==='flow'){
-  const layout=root.SolutionFlowExplorer.layout(v,250),steps=layout.rows.filter(r=>r.kind==='step').map(r=>r.step);
+  const layout=root.SolutionFlowExplorer.layout(v,Infinity),steps=layout.rows.filter(r=>r.kind==='step').map(r=>r.step);
   if(!steps.length)return [];
   for(let i=0;i<steps.length;i+=10){
    const subset=steps.slice(i,i+10),ids=new Set(subset.map(n=>n.id));
@@ -107,12 +107,10 @@ function formContinuation(form,tab,part,total,theme){
 }
 function additionalFormPages(report){
  const all=report.forms||[],pages=[];
- // The core PPTX engine already includes the first 24 form/tab pages (at most 3 tabs/form).
- let baseShown=0;
+ // A form wireframe is a preview. Every tab/section/control also needs its own
+ // complete, editable continuation pages, including tabs shown in the preview.
  for(const form of all){
-  for(let j=0;j<(form.tabs||[]).length;j++){
-   const tab=form.tabs[j],isInBase=j<3&&baseShown<24;
-   if(isInBase){baseShown++;continue;}
+  for(const tab of form.tabs||[]){
    const fieldCount=tab.sections.reduce((n,s)=>n+s.fields.length,0),total=Math.max(1,Math.ceil(fieldCount/10));
    for(let k=0;k<total;k++)pages.push(formContinuation(form,tab,k,total));
   }
@@ -121,23 +119,18 @@ function additionalFormPages(report){
 }
 async function pptx(report,opts){
  const output=await basePptx(report,opts),visuals=report.visuals||[];
- if(!visuals.length)return output;
+ const pages=[...visuals.flatMap(v=>pagesFor(v,opts?.theme)),...additionalFormPages(report)];
+ if(!pages.length)return output;
  const zip=await root.JSZip.loadAsync(await output.arrayBuffer());
  const slides=Object.keys(zip.files).filter(p=>/^ppt\/slides\/slide\d+\.xml$/.test(p));let count=slides.length;
  let pres=await zip.file('ppt/presentation.xml').async('string'),rel=await zip.file('ppt/_rels/presentation.xml.rels').async('string'),ct=await zip.file('[Content_Types].xml').async('string');
- let omitted=0;const limit=Infinity;
- for(const item of [...visuals.flatMap(v=>pagesFor(v,opts?.theme)),...additionalFormPages(report)]){
-  if(count>=limit){omitted++;continue;}
+ for(const item of pages){
   count++;
   zip.file(`ppt/slides/slide${count}.xml`,slide(item.title,item.subtitle,item.items,item.links,opts?.theme,count));
   zip.file(`ppt/slides/_rels/slide${count}.xml.rels`,`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout1.xml"/></Relationships>`);
   pres=pres.replace('</p:sldIdLst>',`<p:sldId id="${256+count-1}" r:id="rId${count+1}"/></p:sldIdLst>`);
   rel=rel.replace('</Relationships>',`<Relationship Id="rId${count+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide${count}.xml"/></Relationships>`);
   ct=ct.replace('</Types>',`<Override PartName="/ppt/slides/slide${count}.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/></Types>`);
- }
- if(omitted){
-  // Ensure the user is not left with a silent suggestion that all diagrams were included.
-  zip.file('ppt/diagram-coverage.txt',`${omitted} diagram continuation slide(s) were omitted after the ${limit}-slide technical export limit. Use editable DOCX and the flow inventory for full available metadata.`);
  }
  zip.file('ppt/presentation.xml',pres);zip.file('ppt/_rels/presentation.xml.rels',rel);zip.file('[Content_Types].xml',ct);
  return zip.generateAsync({type:'blob',compression:'DEFLATE',compressionOptions:{level:6}});

@@ -5,7 +5,7 @@ import vm from 'node:vm';
 import {createRequire} from 'node:module';
 const require=createRequire(import.meta.url),JSZip=require('../vendor/jszip.cjs'),{DOMParser,XMLSerializer}=require('./support/xmldom');
 const s={DOMParser,XMLSerializer,JSZip,Blob,console};s.globalThis=s;
-for(const file of ['vendor/js-yaml.min.js','src/parser.js','src/component-catalog.js','src/webresources.js','src/relationship-map.js','src/erd.js','src/form-preview.js','src/solution-details.js','src/object-explorer.js','src/flow-explorer.js','src/flow-layout.js','src/samples.js','src/report-core.js','src/form-report.js','src/report-visuals.js','src/component-reports.js','src/office-export.js','src/office-diagrams.js','src/office-components.js'])vm.runInNewContext(fs.readFileSync(new URL('../'+file,import.meta.url),'utf8'),s,{filename:file});
+for(const file of ['vendor/js-yaml.min.js','src/parser.js','src/component-catalog.js','src/webresources.js','src/relationship-map.js','src/erd.js','src/form-preview.js','src/solution-details.js','src/object-explorer.js','src/flow-analytics.js','src/flow-explorer.js','src/flow-layout.js','src/samples.js','src/report-core.js','src/form-report.js','src/report-visuals.js','src/component-reports.js','src/office-export.js','src/office-diagrams.js','src/office-components.js'])vm.runInNewContext(fs.readFileSync(new URL('../'+file,import.meta.url),'utf8'),s,{filename:file});
 function model(files){let m=s.SolutionCore.parseSolution(files);m=s.SolutionObjectExplorer.enrich(s.SolutionForms.enrich(m,files),files);m.webResources=s.SolutionWebResources.catalog(m,[...files].map(([path,text])=>({path,size:text.length})));return s.SolutionDetails.enrich(m,files);}
 function fixture(){return new Map([
  ['solution.xml','<ImportExportXml><SolutionManifest><UniqueName>documentation_test</UniqueName></SolutionManifest></ImportExportXml>'],
@@ -100,6 +100,54 @@ test('Word and PowerPoint preserve source endings, all event parameters and nati
 test('PowerPoint pagination retains long table cells and all columns beyond the first six',async()=>{
  const report={title:'Pagination',subtitle:'test',sections:[{title:'Detail',note:'',paragraphs:[],tables:[{title:'Wide',headers:['A','B','C','D','E','F','G','H'],rows:[['first','long '.repeat(400)+'TABLE_TAIL','three','four','five','six','seven','LAST_COLUMN']]}]}],diagrams:[]};
  const z=await JSZip.loadAsync(await (await s.SolutionOffice.pptx(report)).arrayBuffer()),text=(await Promise.all(Object.keys(z.files).filter(p=>/^ppt\/slides\/slide\d+\.xml$/.test(p)).map(p=>z.file(p).async('string')))).join('');assert.ok(text.includes('TABLE_TAIL'));assert.ok(text.includes('LAST_COLUMN'));
+});
+async function officeText(report,format){
+ const zip=await JSZip.loadAsync(await (await s.SolutionOffice[format](report)).arrayBuffer());
+ const parts=Object.keys(zip.files).filter(p=>format==='docx'?p==='word/document.xml':/^ppt\/slides\/slide\d+\.xml$/.test(p));
+ return (await Promise.all(parts.map(p=>zip.file(p).async('string')))).join('');
+}
+test('both exports preserve every long component property and every discovered component family',async()=>{
+ const m=model(fixture()),tail='COMPLETE_METADATA_END_1234';
+ for(const c of m.components)c.properties={...c.properties,exportEvidence:'A'.repeat(430)+tail+' '+c.id};
+ const report=s.SolutionReports.single(m);
+ for(const format of ['docx','pptx']){
+  const contents=await officeText(report,format);
+  for(const c of m.components)assert.ok(contents.includes(c.name),`${format} omitted ${c.name}`);
+  assert.ok(contents.includes(tail),`${format} clipped extended metadata`);
+ }
+});
+test('each individually selectable component downloads as complete, editable Word and PowerPoint',async()=>{
+ const m=model(fixture());
+ for(const component of m.components){
+  const report=s.SolutionReports.component(m,component.id);
+  for(const format of ['docx','pptx']){
+   const content=await officeText(report,format);
+   assert.ok(content.includes(component.name),`${format} failed to export ${component.id}`);
+   assert.ok(content.includes('Component metadata'),`${format} missing metadata for ${component.id}`);
+  }
+ }
+});
+test('PowerPoint includes complete form controls beyond preview caps even when there are no diagram visuals',async()=>{
+ const names=Array.from({length:7},(_,j)=>`tab_${j}_last_control`);
+ const forms=[{name:'All the tabs',table:'new_case',tabs:names.map((last,j)=>({name:`Tab ${j}`,sections:Array.from({length:5},(_,k)=>({name:`Section ${j}.${k}`,fields:Array.from({length:5},(_,i)=>({label:k===4&&i===4?last:`field_${j}_${k}_${i}`,field:`new_field_${j}_${k}_${i}`,kind:'Field'}))}))}))}];
+ const report={mode:'component',title:'Full form export',subtitle:'Every control',generated:'2026-11-04',forms,sections:[],visuals:[],diagrams:[],erds:[],canvases:[],rules:[]};
+ const contents=await officeText(report,'pptx');
+ for(const last of names)assert.ok(contents.includes(last),`Omitted ${last}`);
+ assert.ok(contents.includes('Section 6.4'));
+});
+test('all discovered flow action paths, flow impacts and feedback columns reach Word and PowerPoint',async()=>{
+ const m=model(fixture()),flows=s.SolutionFlowAnalytics.demo();
+ const long={definition:{triggers:{Changed:{type:'Request'}},actions:Object.fromEntries(Array.from({length:280},(_,i)=>[`ACTION_${i}`,{type:'Compose'}]))}};
+ const extended=s.SolutionFlowExplorer.fromJSON(long,'Big automation');
+ assert.equal(extended.actionCount,280);
+ m.flowDetails=[...flows,extended];
+ const report=s.SolutionReports.single(m);
+ assert.ok(report.sections.some(x=>x.title.includes('flow triggers, writes and retrigger risk')));
+ assert.ok(report.sections.some(x=>x.tables.some(t=>t.title==='Potential cycles and self-triggering flows'&&t.rows.length)));
+ for(const format of ['docx','pptx']){
+  const contents=await officeText(report,format);
+  for(const term of ['ACTION_279','telephone1','statuscode','Potential cycles and self-triggering flows','Account status check (self-write)'])assert.ok(contents.includes(term),`${format} missing ${term}`);
+ }
 });
 test('YAML cycles and hostile markup remain inert, and missing canvas sources are reported',()=>{
  const files=fixture();files.set('CanvasApps/new_review/Src/Review.pa.yaml','Screens:\n  Loop: &loop\n    Children:\n      - Loop: *loop\n');const m=model(files);assert.ok(m.canvasApps.length);

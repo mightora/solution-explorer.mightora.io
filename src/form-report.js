@@ -3,7 +3,7 @@
 'use strict';
 const reports=root.SolutionReports;
 const baseSingle=reports.single,baseComparison=reports.comparison;
-const slice=s=>String(s??'').slice(0,220);
+const slice=s=>String(s??'');
 function formSections(forms){
  const output=[];
  if(!forms?.length)return output;
@@ -13,7 +13,7 @@ function formSections(forms){
   const rows=[];
   for(const t of f.tabs)for(const s of t.sections)for(const field of s.fields)
    rows.push([t.name,s.name,String(s.column+1),field.label,field.field||'—',field.kind]);
-  output.push({title:`Form layout — ${slice(f.name)}`,note:`Table: ${slice(f.table)} · Type: ${slice(f.type)} · ${f.tabCount} tabs / ${f.sectionCount} sections. This is a read-only approximation.`,paragraphs:[],tables:[{title:'Editable form wireframe map',headers:['Tab','Section','Column','Control label','Dataverse field','Control kind'],rows:rows.slice(0,900)}]});
+  output.push({title:`Form layout — ${slice(f.name)}`,note:`Table: ${slice(f.table)} · Type: ${slice(f.type)} · ${f.tabCount} tabs / ${f.sectionCount} sections. This is a read-only approximation.`,paragraphs:[],tables:[{title:'Editable form wireframe map',headers:['Tab','Section','Column','Control label','Dataverse field','Control kind'],rows}]});
  }
  return output;
 }

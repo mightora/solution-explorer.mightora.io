@@ -2,13 +2,13 @@
 (function(root){
 'use strict';
 const reports=root.SolutionReports,baseSingle=reports.single,baseComparison=reports.comparison;
-const S=x=>String(x??'').replace(/[\r\n\t]+/g,' ').slice(0,170);
-const cap=80,labels=()=>root.SolutionCore.LABELS||{};
+const S=x=>String(x??'').replace(/[\r\n\t]+/g,' ');
+const labels=()=>root.SolutionCore.LABELS||{};
 const types={data:new Set(['table','column','relationship','choice','key']),integration:new Set(['flow','connection','connector','endpoint','customapi','environment']),security:new Set(['role','privilege','fieldsecurity','fieldpermission']),logic:new Set(['bpf','businessrule','action','customapi','pluginstep']),plugins:new Set(['pluginassembly','plugintype','pluginstep','pluginimage','pcf'])};
 const node=(c,status)=>({id:c.id,label:S(c.name),kind:c.type,detail:S(c.description||labels()[c.type]||c.type),status:status||''});
 function graph(title,kind,nodes,edges=[],note='',side=''){
- const selected=nodes.slice(0,cap),ids=new Set(selected.map(n=>n.id));
- return {kind:'graph',type:kind,title:S(title),side,nodes:selected,edges:edges.filter(e=>ids.has(e.from)&&ids.has(e.to)).slice(0,180),note:note+(nodes.length>cap?` Display is limited to the first ${cap} nodes; use component inventories for remaining items.`:'')};
+ const ids=new Set(nodes.map(n=>n.id));
+ return {kind:'graph',type:kind,title:S(title),side,nodes,edges:edges.filter(e=>ids.has(e.from)&&ids.has(e.to)),note};
 }
 function views(m,side=''){
  const all=m.components||[],get=t=>all.filter(c=>t.has(c.type));const output=[];
@@ -48,16 +48,32 @@ function views(m,side=''){
 }
 function flowVisuals(m,side=''){
  const flows=(m.flowDetails||[]).filter(f=>Array.isArray(f.steps));
- return flows.slice(0,100).map(f=>({kind:'flow',type:'flow',title:'Power Automate — '+S(f.name),side,name:S(f.name),source:S(f.source),steps:f.steps.map(s=>({...s,name:S(s.name),type:S(s.type),branch:S(s.branch),operation:S(s.operation)})),edges:f.edges||[],note:'Solid connectors represent explicit runAfter metadata; branch membership is containment, not implicit sequence.',warnings:f.warnings||[]}));
+ return flows.map(f=>({kind:'flow',type:'flow',title:'Power Automate — '+S(f.name),side,name:S(f.name),source:S(f.source),steps:f.steps.map(s=>({...s,name:S(s.name),type:S(s.type),branch:S(s.branch),operation:S(s.operation)})),edges:f.edges||[],note:'Solid connectors represent explicit runAfter metadata; branch membership is containment, not implicit sequence.',warnings:f.warnings||[]}));
 }
 function docFlowSections(list){
  if(!list.length)return [];
  const info=list.map(f=>[f.side||'Solution',f.name,String(f.steps.length),String(f.edges.filter(e=>e.kind==='dependency').length),f.warnings.length?f.warnings.join('; '):'Extracted WDL metadata']);
- const detail=list.flatMap(f=>f.steps.map(s=>[f.side||'Solution',f.name,s.branch||'Main','  '.repeat(Math.min(s.depth||0,8))+s.name,s.type,s.operation||'—',Object.entries(s.runAfter||{}).map(([k,v])=>k+' ('+v.join(', ')+')').join('; ')||'No explicit runAfter'])).slice(0,2500);
+ const detail=list.flatMap(f=>f.steps.map(s=>[f.side||'Solution',f.name,s.branch||'Main','  '.repeat(Math.min(s.depth||0,8))+s.name,s.type,s.operation||'—',Object.entries(s.runAfter||{}).map(([k,v])=>k+' ('+v.join(', ')+')').join('; ')||'No explicit runAfter']));
  return [{title:'Power Automate flow diagrams and action paths',note:'Read-only exported WDL. Branches show membership; execution order is only known where runAfter or trigger-entry edges are explicit. Editable Word flow maps and native PowerPoint diagram slides follow.',paragraphs:[],tables:[
   {title:'Flow diagram index',headers:['Side','Flow','Steps','Explicit runAfter','Limitations'],rows:info},
   {title:'Editable flow path and branch map',headers:['Side','Flow','Branch','Action / nesting','Type','Operation','Explicit predecessor'],rows:detail}
  ]}];
+}
+function flowImpactSections(model,side=''){
+ const analytics=root.SolutionFlowAnalytics;
+ if(!analytics||!(model.flowDetails||[]).length)return [];
+ const rows=analytics.portfolio(model.flowDetails,model.components),impact=analytics.trace(rows);
+ const owner=side?side+' / ':'';
+ return [{title:owner+'Dataverse flow triggers, writes and retrigger risk',
+  note:'Static analysis of supported Dataverse triggers and writes. Matching table/event/column metadata indicates a potential retrigger, not proof of execution or an identical record.',
+  paragraphs:[...(impact.truncated?['The dependency analyser reached its link safety limit; not all potential links could be assessed.']:[]),
+   ...rows.filter(r=>r.analytics&&!r.analytics.complete).map(r=>r.name+': the source inspection was incomplete.')],
+  tables:[
+   {title:'Flow triggers by table and column',headers:['Flow','Table','Trigger','Change','Monitored columns','Column filter status','Environment'],rows:rows.flatMap(f=>f.triggers.map(t=>[f.name,t.table||'Unresolved',t.step,t.change,t.columns.join(', ')||'—',t.columnsStatus,t.environment]))},
+   {title:'Flow writes by table and column',headers:['Flow','Table','Action','Operation','Written columns','Column resolution','Environment'],rows:rows.flatMap(f=>f.writes.map(w=>[f.name,w.table||'Unresolved',w.step,w.operation,w.columns.join(', ')||'—',w.columnsStatus,w.environment]))},
+   {title:'Potential flow-to-flow retriggers',headers:['Writing flow','Write action','Triggered flow','Trigger step','Table','Write columns','Trigger columns','Matched columns','Events','Confidence'],rows:impact.links.map(l=>[l.source,l.writeStep,l.target,l.triggerStep,l.table,l.writtenColumns.join(', ')||'—',l.triggerColumns.join(', ')||'—',l.matchedColumns.join(', ')||'—',l.eventLabel,l.kind])},
+   {title:'Potential cycles and self-triggering flows',headers:['Cycle','Flow path','Table / column overlap','Other potential links'],rows:impact.loops.map((loop,i)=>[`${loop.type==='self'?'Self-retrigger':'Multi-flow cycle'} ${i+1}`,loop.links.map(l=>l.source+' → '+l.target).join(' / '),loop.links.map(l=>l.table+': '+(l.matchedColumns.join(', ')||l.triggerColumns.join(', ')||'column impact unresolved')).join(' / '),String(loop.otherLinks||0)])}
+  ]}];
 }
 function decorate(report,inputs){
  const [a,b]=inputs;
@@ -72,7 +88,7 @@ function decorate(report,inputs){
   }
  }
  const idx=report.sections.findIndex(s=>s.title==='Assumptions, gaps and verification'||s.title==='Completeness and limitations');
- const sections=docFlowSections(flows);
+ const sections=[...docFlowSections(flows),...flowImpactSections(a,b?'Baseline A':''),...(b?flowImpactSections(b,'Newer B'):[])];
  report.sections.splice(idx<0?report.sections.length:idx,0,...sections);
  report.totalRows=report.sections.flatMap(s=>s.tables||[]).reduce((n,t)=>n+t.rows.length,0);
  report.visualSummary={diagrams:report.visuals.length,flows:flows.length,forms:report.forms?.length||0};
