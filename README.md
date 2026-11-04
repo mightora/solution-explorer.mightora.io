@@ -1,10 +1,16 @@
 # Mightora Solution Explorer
 
-**Inspect. Understand. Compare.** A free, MIT-licensed Dataverse solution ZIP explorer designed to run entirely in your browser.
+**Inspect. Understand. Compare.** A free, MIT-licensed Power Platform solution explorer that runs entirely in your browser. Open exported ZIPs or supported unpacked XML/YAML source-control folders.
 
 Live site (once deployed): https://solution-explorer.mightora.io
 
 ## Features
+
+- Inspect traditional Dataverse XML solutions alongside Microsoft YAML source-control manifests and selected YAML component definitions. ZIP upload remains supported; use the local folder picker for unpacked repositories. Multi-solution folders select the first manifest with a visible warning.
+- Generate a shared evidence-backed documentation record for every recognised object: seven plain-English questions, technical properties, direct references, data interactions, confidence, risks, source locations and explicit missing information.
+- Explore seven architecture evidence inventories: Execution impact, Data lineage, Application architecture, Security privileges, Integrations, Dependencies and potential automation cycles. Export each map to CSV or include all seven in editable full-solution Word/PowerPoint reports.
+- Inspect modern flow YAML where a WDL definition with triggers/actions is packaged. Existing JSON flow inspection and column-matched feedback-loop analysis remain available.
+- See the [51-family coverage matrix and remaining gaps](COVERAGE.md). Recognition is not a claim of universal support or observed runtime behaviour.
 
 - Discover extended component families: roles and privileges, field security, BPFs, custom APIs, plug-ins and images, PCF controls, choices and keys, charts, dashboards, commands/ribbon, connectors and webhooks, SLAs and routing, templates, duplicate detection, data maps, offline profiles, Power Pages, Copilot Studio and AI assets. Manifest-only entries are labelled **Discovered**, while unsupported type codes are shown explicitly.
 - Review declared missing dependencies and distinguish **Inspected**, **Discovered**, **Referenced** and **Unsupported** metadata.
@@ -26,7 +32,7 @@ Live site (once deployed): https://solution-explorer.mightora.io
 
 ## Example ZIPs
 
-The gallery includes Project Tracker v1.0, Project Tracker v1.1, Service Desk (managed teaching example), Grant Applications, and Volunteer Events. All five packages are entirely fictional and **not importable into Dataverse**. They contain illustrative XML/JSON to exercise the explorer parser. The live download routes are `/examples/<id>-demo.zip`; offline HTML can generate the same files without network access.
+The gallery includes Project Tracker, Service Desk, Grant Applications, Volunteer Events and architecture showcase examples. All six packages are entirely fictional and **not importable into Dataverse**. They contain illustrative XML/JSON to exercise the explorer parser. The live download routes are `/examples/<id>-demo.zip`; offline HTML can generate the same files without network access.
 
 For authentic Microsoft-created solutions, use [Microsoft Copilot Studio Samples](https://github.com/microsoft/CopilotStudioSamples). These projects have different coverage and must be reviewed before import or use.
 
@@ -55,11 +61,11 @@ Then browse to http://localhost:8080. There are no runtime npm dependencies, bui
 
 ## Privacy & security
 
-All ZIP reading, XML/JSON parsing, diagram generation, comparison and export run in the current browser tab. No ZIP contents are sent to an application server. The online edition makes requests for Mightora shared UI and brand assets; the offline edition embeds its assets and blocks network access with a restrictive Content Security Policy. It deliberately excludes environment-variable values from the parsed model and exports. The in-page resource monitor is partial; verify requests independently with F12 → Network → Preserve log.
+All ZIP/folder reading, XML/YAML/JSON parsing, diagram generation, comparison and export run in the current browser tab. No ZIP contents are sent to an application server. The online edition makes requests for Mightora shared UI and brand assets; the offline edition embeds its assets and blocks network access with a restrictive Content Security Policy. It deliberately excludes environment-variable values from the parsed model and exports. The in-page resource monitor is partial; verify requests independently with F12 → Network → Preserve log.
 
 Packaged textual web resources, canvas sources, FormXML and rule definitions are retained in memory for inspection and documentation. Component JSON and full solution JSON include these sources. Source text can itself contain confidential data or hardcoded credentials, so review exports before sharing. Environment-variable values remain excluded from the parsed metadata. The model-driven Dataverse edition additionally resolves web resource names associated with managed solution component IDs when the signed-in user has permission and retrieves source only on request through the same-origin Dataverse Web API. Other managed-solution components remain a partial reference inventory, not a full export.
 
-ZIPs are subject to size, entry count and decompressed-size limits; XML/JSON is parsed as data and never executed. See [LIMITATIONS.md](LIMITATIONS.md) for scope and caveats.
+ZIPs and folders are subject to size and entry-count limits; XML/YAML/JSON is parsed as inert data and never executed. See [LIMITATIONS.md](LIMITATIONS.md) and [COVERAGE.md](COVERAGE.md) for scope and caveats.
 
 ## Project layout
 

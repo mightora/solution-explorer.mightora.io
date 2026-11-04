@@ -77,11 +77,36 @@ function fromJSON(input,name="Flow.json"){
  let json;try{json=typeof input==="string"?JSON.parse(input):input;}catch{throw Error("Invalid JSON. Choose a Power Automate flow definition.");}
  const out=inspect(json,name,name);if(!out)throw Error("No Power Automate workflow definition found.");return out;
 }
+function yamlWorkflow(text,name){
+ if(!root.jsyaml||text.length>6*1024*1024)return null;
+ const parsed=root.jsyaml.load(text,{json:true}),seen=new WeakSet();
+ const get=(v,key)=>Object.entries(v||{}).find(([k])=>k.toLowerCase()===key)?.[1];
+ function locate(value,depth=0){
+  if(!value||typeof value!=="object"||seen.has(value)||depth>7)return null;seen.add(value);
+  if(Array.isArray(value)){for(const item of value.slice(0,100)){const hit=locate(item,depth+1);if(hit)return hit;}return null;}
+  const def=get(value,'definition')||get(value,'clientdata');
+  if(def){let data=def;if(typeof data==='string'){try{data=JSON.parse(data);}catch{data=null;}}
+   if(data&&typeof data==='object'&&(data.triggers||data.actions))return {def:data,meta:value};
+   const nested=locate(data,depth+1);if(nested)return nested;
+  }
+  if(value.triggers||value.actions)return {def:value,meta:value};
+  for(const nested of Object.values(value).slice(0,100)){const hit=locate(nested,depth+1);if(hit)return hit;}
+  return null;
+ }
+ const found=locate(parsed);if(!found)return null;
+ const metadata=parsed?.Workflow||parsed?.workflow||parsed;
+ const display=get(metadata,'displayname')||get(metadata,'name')||get(found.meta,'displayname')||name;
+ return {properties:{displayName:display,definition:found.def,connectionReferences:get(metadata,'connectionreferences')||get(found.meta,'connectionreferences')||{}}};
+}
 function collect(files){
  const list=[];
  for(const [path,body] of files){
-  if(!/(?:^|\/)(?:workflows|modernflows)\//i.test(path)||!/\.json$/i.test(path))continue;
-  try{const f=fromJSON(body,path.split("/").pop().replace(/\.json$/i,""));f.source=short(path,210);list.push(f);}catch{}
+  if(!/(?:^|\/)(?:workflows|modernflows)\//i.test(path)||!(/\.json$/i.test(path)||/\.ya?ml$/i.test(path)))continue;
+  try{const name=path.split("/").at(-2)||path.split("/").pop().replace(/\.(json|ya?ml)$/i,"");
+   const data=/\.json$/i.test(path)?body:yamlWorkflow(body,name);
+   if(!data)continue;
+   const f=fromJSON(data,name);f.source=short(path,210);if(!list.some(x=>x.name===f.name))list.push(f);
+  }catch{}
  }
  if(list.length)return list;
  for(const [path,xmlText] of files){

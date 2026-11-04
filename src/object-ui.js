@@ -20,6 +20,7 @@ function select(id,scroll=false){
  area.innerHTML=`<div class="object-inspector-top"><span class="type-chip">${esc(typeName(c.type))}</span><span class="coverage-tag ${esc(c.coverage||'inspected')}">${esc(status(c))}</span></div>
    <h3>${esc(c.name)}</h3><p class="object-description">${esc(c.description||'Metadata discovered inside this solution export.')}</p>
    <div class="object-source"><strong>Source:</strong> ${esc(detail?.source||c.source||'Extracted component inventory')}</div>
+   ${globalThis.SolutionDocumentation?.markup(globalThis.SolutionDocumentation.forComponent(model,c))||''}
    <h4>Component properties</h4>${properties({...c.properties,...detail?.properties})}
    <div class="object-inspector-actions"><button class="btn btn-outline small" id="object-trace">Where used and impact ↗</button><button class="btn btn-outline small" id="object-download">Export selected JSON ↓</button><button class="btn btn-outline small" id="object-docx">Editable Word ↓</button><button class="btn btn-outline small" id="object-pptx">Editable PowerPoint ↓</button>${c.type==='flow'?'<a class="btn btn-outline small" href="#flow-explorer">Open flow map ↗</a>':''}</div><p id="object-export-status" role="status"></p>
    ${globalThis.SolutionComponentUI?.markup(model,id)||''}

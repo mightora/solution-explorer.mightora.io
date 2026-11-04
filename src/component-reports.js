@@ -8,6 +8,22 @@ const safeProperties=record=>Object.entries(record||{}).filter(([key])=>!sensiti
 const fields=f=>(f.tabs||[]).flatMap(t=>(t.sections||[]).flatMap(s=>(s.fields||[]).map(c=>[t.name,s.name,c.label,c.field,c.kind])));
 function itemSection(m,c,side=''){
  const d=root.SolutionDetails.component(m,c.id),tables=[],paragraphs=[],blocks=[];const title=(side?side+' / ':'')+c.name;
+ const doc=root.SolutionDocumentation?.forComponent(m,c);
+ if(doc){
+  paragraphs.push('What is this? '+doc.overview.what,'What does it do? '+doc.overview.does,'When does it run or appear? '+doc.overview.when,
+   'What information does it use or change? '+doc.overview.data,'What does it depend on? '+doc.overview.depends,
+   'What could be affected if it changes? '+doc.overview.impact,'What should someone verify? '+doc.overview.verify,
+   'Confidence: '+doc.confidence,'Evidence caveat: '+doc.status);
+  tables.push(tab('Architecture evidence and completeness',['Section','Finding','Evidence / confidence'],[
+   ['Identity','Identifier: '+doc.identifier,'Coverage: '+doc.coverage+' / '+doc.confidence],
+   ['Identity','Logical name: '+doc.logicalName,'Type: '+doc.type],
+   ...doc.evidence.map(x=>['Source evidence',x,'Extracted package path']),
+   ...doc.interactions.map(x=>['Data interaction: '+x.operation,x.table+' / '+x.columns,x.confidence+' / '+x.evidence]),
+   ...doc.relationships.map(x=>['Dependency: '+x.direction,x.other,x.kind+' / '+(x.evidence||[]).map(v=>(v.path||'Metadata')+(v.line?':'+v.line:'')+' / '+v.detail).join('\n')]),
+   ...doc.risks.map(x=>['Architectural risk / verification',x,'Static recommendation']),
+   ...doc.missing.map(x=>['Missing or unverified information',x,'Not established by supplied source'])
+  ]));
+ }
  tables.push(tab('Component metadata',['Property','Value'],[['Family',root.SolutionCore.LABELS[c.type]||c.type],['Coverage',c.coverage||'inspected'],['Source',c.source||m.objectDetails?.[c.id]?.source||'Metadata inventory'],...safeProperties(c.properties)]));
  const children=[];function flatten(nodes,path=''){for(const n of nodes||[]){const next=path?path+' / '+n.name:n.name;children.push([next,n.kind,safeProperties(n.properties).map(([k,v])=>k+': '+v).join('\n')]);flatten(n.children,next);}}
  flatten(d?.children);if(children.length)tables.push(tab('Contained component metadata',['Object path','Kind','Properties'],children));
@@ -55,6 +71,14 @@ function itemSection(m,c,side=''){
  return section(title,'Editable component documentation derived from the selected solution export.',tables,paragraphs,blocks);
 }
 function addDetails(r,models){
+ if(root.SolutionDocumentation){
+  for(const [m,side] of models){
+   const architecture=root.SolutionDocumentation.solution(m),name=side?side+' / ':'';
+   const mapTitles={execution:['Execution impact map',['Component family','Component','Event / operation','Table','Columns','Evidence']],lineage:['Data lineage map',['Component','Interaction','Table','Columns','Confidence','Evidence']],applications:['Application architecture map',['Application','Kind','Source','Verified references']],security:['Security matrix',['Role','Declared privilege','Privilege level/depth','Source / caveat']],integrations:['Integration map',['Component','Family','Connector / scope','Source']],dependencies:['Dependency map',['Dependent','Requires','Evidence class','Location','Details']],cycles:['Potential automation cycles',['Path kind','Components','Table / matching columns','Caveat']]};
+   r.sections.push(section(name+'Solution architecture summary','Static package evidence, not live environment execution or effective security.',[],[architecture.overview,...architecture.warnings]));
+   for(const [key,[heading,headers]] of Object.entries(mapTitles))r.sections.push(section(name+heading,'The map is an editable evidence inventory. Unsupported calls and runtime-only effects are not reconstructed.',[tab(heading,headers,architecture.maps[key])]));
+  }
+ }
  r.erds=models.map(([m,side])=>({...root.SolutionERD.build(m),side}));
  r.canvases=models.flatMap(([m,side])=>(m.canvasApps||[]).map(a=>({...a,side})));
  r.rules=models.flatMap(([m,side])=>(m.businessRules||[]).map(a=>({...a,side})));

@@ -34,10 +34,31 @@
    }
    if(!files.size)throw Error('No supported metadata files were found inside the ZIP.');
    const canvasWarnings=await SolutionDetails.unpackCanvas(zip,files);
+   return assemble(files,checksums,zip,entries.map(e=>({path:e.name.replace(/\\/g,'/'),size:e._data?.uncompressedSize??null})),file.name,canvasWarnings);
+ }
+ function assemble(files,checksums,zip,entries,filename,canvasWarnings=[]){
    const model=SolutionCore.parseSolution(files,checksums);model.flowDetails=SolutionFlowExplorer.collect(files);let enriched=SolutionObjectExplorer.enrich(SolutionForms.enrich(model,files),files);
-   const webResources=SolutionWebResources.catalog(enriched,entries.map(e=>({path:e.name.replace(/\\/g,'/'),size:e._data?.uncompressedSize??null})));
+   const webResources=SolutionWebResources.catalog(enriched,entries);
    enriched=SolutionDetails.enrich({...enriched,webResources},files);enriched.warnings.push(...canvasWarnings);
-   return {model:{...enriched,info:{...model.info,filename:file.name}},archive:zip};
+   return {model:{...enriched,info:{...model.info,filename}},archive:zip};
+ }
+ async function readFolder(fileList){
+   const list=Array.from(fileList||[]);if(!list.length)throw Error('Choose a solution source folder.');
+   if(list.length>MAX_FILES)throw Error('Folder contains more than 4,000 files.');
+   const files=new Map(),checksums=new Map(),entries=[],nested=new JSZip();let total=0;
+   for(const file of list){
+    const path=(file.webkitRelativePath||file.name).replace(/\\/g,'/').replace(/^\/?[^/]+\//,'');
+    if(!path||path.startsWith('../')||path.includes('/../'))continue;
+    if(file.size>MAX_ENTRY)throw Error(path+' exceeds the 20 MB file limit.');
+    total+=file.size;if(total>MAX_UNPACKED)throw Error('Folder exceeds the 130 MB inspection limit.');
+    entries.push({path,size:file.size});
+    checksums.set(path,'');
+    if(/canvasapps\/.+\.msapp$/i.test(path))nested.file(path,await file.arrayBuffer());
+    if(/\.(xml|json|ya?ml|xaml|js|mjs|ts|css|html?|svg|resx|xsl|txt|md)$/i.test(path))files.set(path,await file.text());
+   }
+   if(!files.size)throw Error('The selected folder contains no inspectable text definitions.');
+   const canvasWarnings=await SolutionDetails.unpackCanvas(nested,files);
+   return assemble(files,checksums,null,entries,list[0].webkitRelativePath?.split('/')[0]||'Unpacked solution',canvasWarnings);
  }
  async function handle(file,slot){
    if(!file||state.loading)return;state.loading=true;status(`Reading ${file.name} locally…`);
@@ -46,8 +67,32 @@
    catch(e){status(e.message||'Could not read the solution ZIP.',true);}
    finally{state.loading=false;$(id+'-picker').disabled=false;}
  }
+ async function handleFolder(list,slot){
+   if(!list?.length||state.loading)return;state.loading=true;status('Reading unpacked solution files locally…');
+   $('primary-folder-picker').disabled=true;$('compare-folder-picker').disabled=true;
+   try{const {model}=await readFolder(list);state[slot]=model;archives[slot]=null;$(slot==='a'?'primary-label':'compare-label').textContent=model.info.filename;status('Loaded '+model.components.length+' components from an unpacked folder.');render();}
+   catch(e){status(e.message||'Could not inspect this folder.',true);}
+   finally{state.loading=false;$('primary-folder-picker').disabled=false;$('compare-folder-picker').disabled=false;}
+ }
  function bindDrop(elementId,slot){const el=$(elementId);for(const eventName of ['dragenter','dragover'])el.addEventListener(eventName,e=>{e.preventDefault();el.classList.add('dragging');});for(const eventName of ['dragleave','drop'])el.addEventListener(eventName,e=>{e.preventDefault();el.classList.remove('dragging');});el.addEventListener('drop',e=>{const file=e.dataTransfer?.files?.[0];if(file)handle(file,slot);});}
- function render(){renderOverview();renderInventory();renderDependencies();renderDiagram();renderDiff();renderWarnings();document.dispatchEvent(new CustomEvent('solution-workspace-change',{detail:{a:state.a,b:state.b}}));}
+ function render(){renderOverview();renderArchitecture();renderInventory();renderDependencies();renderDiagram();renderDiff();renderWarnings();document.dispatchEvent(new CustomEvent('solution-workspace-change',{detail:{a:state.a,b:state.b}}));}
+ const architectureHeaders={
+  execution:['Family','Component','Event / operation','Table','Columns','Evidence'],
+  lineage:['Component','Interaction','Table','Columns','Confidence','Evidence'],
+  applications:['Application','Kind','Source','Verified references'],
+  security:['Role','Declared privilege','Privilege level/depth','Source / caveat'],
+  integrations:['Component','Family','Connector / scope','Source'],
+  dependencies:['Dependent','Required','Evidence class','Location','Details'],
+  cycles:['Path kind','Components','Table / matching columns','Verification caveat']
+ };
+ function renderArchitecture(){
+   const m=state.a,key=$('architecture-map').value,heads=architectureHeaders[key],architecture=m?SolutionDocumentation.solution(m):null,rows=architecture?.maps[key]||[];
+   $('architecture-csv').disabled=!m;$('architecture-overview').textContent=architecture?.overview||'Load a solution ZIP or source folder to explore the architecture.';
+   $('architecture-head').innerHTML='<tr>'+heads.map(x=>'<th>'+html(x)+'</th>').join('')+'</tr>';
+   $('architecture-rows').innerHTML=rows.length?rows.slice(0,250).map(row=>'<tr>'+row.map(value=>'<td>'+html(value)+'</td>').join('')+'</tr>').join(''):
+    '<tr><td colspan="'+heads.length+'" class="empty-state">No supported evidence for this map in the supplied package. Absence does not prove no dependencies exist.</td></tr>';
+   $('architecture-note').textContent=`${rows.length} extracted map record(s)${rows.length>250?' · first 250 shown; download the full CSV or Word/PowerPoint report for all records':''}. Plug-in writes and runtime-only paths cannot be determined without implementation evidence.`;
+ }
  function renderOverview(){const m=state.a;
    $('solution-subtitle').textContent=m?`${m.info.name||m.info.filename||'Solution'} · v${m.info.version||'?'} · ${m.components.length.toLocaleString()} discovered components`:'Your architecture, one clear picture.';
    for(const type of ['table','column','relationship','flow','webresource','environment'])$('count-'+type).textContent=m?m.counts[type].toLocaleString():'—';
@@ -62,7 +107,7 @@
  }
  function componentDetails(c){
    const kind=label(c.type).replace(/s$/,'');
-   return `<div class="type-chip">${html(kind)}</div><p class="component-coverage"><strong>Coverage:</strong> ${html(SolutionCore.COVERAGE?.[c.coverage]||'Inspected metadata')}${c.source?' · '+html(c.source):''}</p><p>${html(c.description||'Solution metadata')}</p><table class="property-table"><tbody>${Object.entries(c.properties||{}).map(([k,v])=>`<tr><th>${html(k)}</th><td>${html(v)}</td></tr>`).join('')||'<tr><td>No additional properties in this export.</td></tr>'}</tbody></table><p class="dialog-note">Only discovered metadata is shown. Environment variable values and secret properties are not extracted.</p>`;
+   return `<div class="type-chip">${html(kind)}</div><p class="component-coverage"><strong>Coverage:</strong> ${html(SolutionCore.COVERAGE?.[c.coverage]||'Inspected metadata')}${c.source?' · '+html(c.source):''}</p>${SolutionDocumentation.markup(SolutionDocumentation.forComponent(state.a,c))}<h4>Technical properties</h4><table class="property-table"><tbody>${Object.entries(c.properties||{}).map(([k,v])=>`<tr><th>${html(k)}</th><td>${html(v)}</td></tr>`).join('')||'<tr><td>No additional properties in this export.</td></tr>'}</tbody></table><p class="dialog-note">Only discovered metadata is shown. Environment variable values and secret properties are not extracted.</p>`;
  }
  function showComponent(id){const c=state.componentMap.get(id);if(!c)return;$('dialog-title').textContent=c.name;$('dialog-content').innerHTML=componentDetails(c)+'<div class="object-dialog-action"><button id="open-in-object-browser" type="button" class="btn btn-primary small">Explore object hierarchy ↗</button></div>';$('component-dialog').showModal();$('open-in-object-browser').addEventListener('click',()=>{$('component-dialog').close();document.dispatchEvent(new CustomEvent('object-open-request',{detail:{id}}));});}
  function renderInventory(){const m=state.a;const q=$('component-search').value.trim().toLowerCase(),type=$('type-filter').value,coverage=$('coverage-filter').value;
@@ -136,9 +181,10 @@
  $('try-demo').addEventListener('click' ,()=>{state.a=SolutionSamples.demo(1);state.b=null;archives.a=null;archives.b=null;$('primary-label').textContent='Synthetic demo · v1.0';$('compare-label').textContent='No comparison loaded';status('Loaded the synthetic demonstration solution.');render();$('workspace').scrollIntoView({behavior:'smooth'});});
  $('demo-pair').addEventListener('click',()=>{state.a=SolutionSamples.demo(1);state.b=SolutionSamples.demo(2);archives.a=null;archives.b=null;$('primary-label').textContent='Synthetic demo · v1.0';$('compare-label').textContent='Synthetic demo · v1.1';status('Demo comparison ready — synthetic solution versions 1.0 and 1.1.');render();$('comparison').scrollIntoView({behavior:'smooth'});});
  $('primary-picker').addEventListener('click',()=>$('primary-file').click());$('compare-picker').addEventListener('click',()=>$('compare-file').click());
+ for(const slot of ['primary','compare']){$(slot+'-folder-picker').addEventListener('click',()=>$(slot+'-folder').click());$(slot+'-folder').addEventListener('change',e=>handleFolder(e.target.files,slot==='primary'?'a':'b'));}
  $('primary-file').addEventListener('change',e=>handle(e.target.files?.[0],'a'));$('compare-file').addEventListener('change',e=>handle(e.target.files?.[0],'b'));
  bindDrop('primary-drop','a');bindDrop('compare-drop','b');
- $('clear-all').addEventListener('click',()=>{state.a=null;state.b=null;archives.a=null;archives.b=null;state.diff=[];$('primary-file').value='';$('compare-file').value='';$('primary-label').textContent='No file selected';$('compare-label').textContent='No comparison loaded';status('Workspace cleared. No solution files are retained.');render();});
+ $('clear-all').addEventListener('click',()=>{state.a=null;state.b=null;archives.a=null;archives.b=null;state.diff=[];$('primary-file').value='';$('compare-file').value='';$('primary-folder').value='';$('compare-folder').value='';$('primary-label').textContent='No file selected';$('compare-label').textContent='No comparison loaded';status('Workspace cleared. No solution files are retained.');render();});
  $('type-filter').innerHTML='<option value="all">All component types</option>'+SolutionCore.TYPES.map(t=>`<option value="${html(t)}">${html(label(t))}</option>`).join('');
  $('component-search').addEventListener('input',renderInventory);$('type-filter').addEventListener('change',renderInventory);$('coverage-filter').addEventListener('change',renderInventory);
  $('diff-search').addEventListener('input',renderDiff);$('diff-filter').addEventListener('change',renderDiff);
@@ -146,6 +192,8 @@
  $('swap-solutions').addEventListener('click',()=>{if(!state.a||!state.b)return;[state.a,state.b]=[state.b,state.a];[archives.a,archives.b]=[archives.b,archives.a];$('primary-label').textContent=state.a.info.filename||state.a.info.name||'Baseline';$('compare-label').textContent=state.b.info.filename||state.b.info.name||'Newer';status('Comparison direction reversed. A is now the baseline.');render();});
  $('download-json').addEventListener('click',()=>{if(state.a)download('solution-inventory.json',JSON.stringify({...state.a,source:'Mightora Solution Explorer'},null,2),'application/json');});
  $('download-csv').addEventListener('click',()=>{if(state.a)download('solution-components.csv',csv([['Type','Name','Description','Properties'],...state.a.components.map(c=>[c.type,c.name,c.description,JSON.stringify(c.properties)])]),'text/csv');});
+ $('architecture-map').addEventListener('change',renderArchitecture);
+ $('architecture-csv').addEventListener('click',()=>{if(!state.a)return;const key=$('architecture-map').value,rows=SolutionDocumentation.solution(state.a).maps[key];download(`solution-${key}-map.csv`,csv([architectureHeaders[key],...rows]),'text/csv');});
  $('export-svg').addEventListener('click',()=>{if(state.a)download(`solution-${state.diagram}.svg`,SolutionDiagrams.build(state.a,state.diagram),'image/svg+xml');});
  $('export-mermaid').addEventListener('click',()=>{if(state.a)download(`solution-${state.diagram}.mmd`,svgToMermaid(state.a,state.diagram),'text/plain');});
  $('export-diff-csv').addEventListener('click',()=>{if(state.a&&state.b)download('solution-comparison.csv',csv([['Status','Type','Component','Property','Baseline A','Newer B'],...state.diff.flatMap(c=>{const fields=SolutionCore.propertyChanges(c.before||{},c.status==='removed'?{}:c.properties||{});return fields.length?fields.map(f=>[c.status,c.type,c.name,f.key,f.before??'',f.after??'']):[[c.status,c.type,c.name,'','','']];})]),'text/csv');});

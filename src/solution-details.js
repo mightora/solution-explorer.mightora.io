@@ -194,6 +194,15 @@ function enrich(m,files){
  const docs=[...files].filter(([p])=>/\.xml$/i.test(p)&&!/(?:^|\/)webresources\//i.test(p)).map(([p,text])=>[p,xml(text)]).filter(([,d])=>d);
  m.components=m.components.filter(c=>c.type!=='webresource'||(m.webResources||[]).some(r=>r.id===c.id)||!(m.webResources||[]).some(r=>norm(root.SolutionWebResources.resourcePath(r.path))===norm(c.name)));
  resourceFiles(m,files);formEvents(m,docs);businessRules(m,files,docs);views(m,docs);canvas(m,files);
+ // YAML source-control files are evidence, not code to execute. Exclude value
+ // manifests and redact explicitly credential-labelled lines before export.
+ for(const c of m.components){
+  if(!/\.ya?ml$/i.test(c.source||''))continue;
+  const match=[...files].find(([path])=>norm(pathOf(path))===norm(pathOf(c.source)));
+  if(!match||/environment[_-]?variable[_-]?values/i.test(match[0]))continue;
+  const clean=String(match[1]).split(/\r?\n/).map(line=>/^\s*['"]?(?:password|secret|token|credential|authorization|connectionstring|api[_-]?key|privatekey|currentvalue|defaultvalue|clientsecret|accountkey|accesskey)['"]?\s*:/i.test(line)?line.replace(/:.*/,': [REDACTED]'):line).join('\n');
+  addSource(m,c.id,source(match[0],clean,'YAML component definition (credential-labelled values redacted)'));
+ }
  const sourceTypes={ribbondiffxml:'ribbon',ribboncustomization:'ribbon',commanddefinition:'command',ribboncommand:'command',customcontrol:'pcf',webtemplate:'webtemplate',adx_webtemplate:'webtemplate',customapi:'customapi'};
  for(const [p,d] of docs)for(const n of all(d)){const type=sourceTypes[tag(n)],name=field(n,'Name','UniqueName','Id');if(!type||!name)continue;const c=m.components.find(c=>c.id===idOf(type,name));if(c)addSource(m,c.id,source(p+'#'+name,serialize(n),'Component definition'));}
  for(const c of m.components){if(['flow','action','bpf'].includes(c.type))for(const [p,text] of files)if(/workflows\/.+\.(json|xaml)$/i.test(p)){
