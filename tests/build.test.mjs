@@ -196,3 +196,11 @@ test('full web resource inspector and complete relationship map are bundled ever
  }
  for(const name of ['webresource-ui.js','relationship-ui.js','webresources.js','relationship-map.js'])assert.ok(fs.existsSync(path.join(dir,'src',name)));
 });
+
+test('flow analytics and dependency views ship in all editions',()=>{
+ for(const file of ['index.html','downloads/solution-explorer-offline.html','dataverse/solution-explorer.html']){
+  const content=fs.readFileSync(path.join(dir,file),'utf8');
+  for(const id of ['flow-analytics','flow-analytics-charts','flow-analytics-triggers','flow-analytics-writes','flow-analytics-network'])assert.ok(content.includes('id="'+id+'"'));
+  if(file!=='index.html')for(const module of ['flow-analytics.js','flow-analytics-ui.js'])assert.ok(content.includes(fs.readFileSync(path.join(dir,'src',module),'utf8').replaceAll('</script','<\\/script')));
+ }
+});

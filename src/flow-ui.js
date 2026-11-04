@@ -2,7 +2,7 @@
 (function(){
 "use strict";
 const $=id=>document.getElementById(id),esc=s=>SolutionFlowExplorer.escape(s);
-let source=[],standalone=null,index=0,active=null;
+let source=[],standalone=null,index=0,active=null,components=[];
 const options=()=>standalone?[standalone]:source,chosen=()=>options()[index]||null;
 function message(s,error=false){const el=$("flow-notice");el.textContent=s;el.classList.toggle("flow-error",error);}
 function save(name,data,type){const u=URL.createObjectURL(new Blob([data],{type}));const a=document.createElement("a");a.href=u;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1200);}
@@ -24,6 +24,7 @@ function inspect(id){
 }
 function render(){
  const list=options(),f=chosen(),picker=$("flow-choice");picker.replaceChildren();
+ SolutionFlowAnalyticsUI.setFlows(list,components);
  if(!list.length){const o=document.createElement("option");o.textContent="No flow definitions loaded";picker.append(o);}
  else{list.forEach((x,i)=>{const o=document.createElement("option");o.value=String(i);o.textContent=x.name+" · "+x.actionCount+" actions";picker.append(o);});picker.value=String(index);}
  ["flow-export-svg","flow-export-mermaid","flow-export-json"].forEach(id=>$(id).disabled=!f);
@@ -38,11 +39,12 @@ function render(){
 }
 document.addEventListener("solution-workspace-change",e=>{
  standalone=null;source=[];index=0;active=null;
- const m=e.detail?.a;
+ const m=e.detail?.a;components=m?.components||[];
  if(m?.flowDetails?.length)source=m.flowDetails;
  else if(m?.sample&&m.info?.filename){try{source=SolutionFlowExplorer.collect(SolutionSamples.files(m.info.filename.replace(/-demo\.zip$/,"")));}catch{}}
  render();
 });
+document.addEventListener("flow-analytics-select",e=>{index=e.detail;active=null;render();$("flow-explorer").scrollIntoView({behavior:"smooth"});});
 $("flow-choice").addEventListener("change",e=>{index=Number(e.target.value)||0;active=null;render();});
 $("flow-step-search").addEventListener("input",render);
 const clickStep=e=>{const el=e.target.closest("[data-flow-step]");if(el)inspect(el.dataset.flowStep);};
@@ -57,6 +59,7 @@ $("flow-json-input").addEventListener("change",async e=>{
  catch(error){message(error.message||"Invalid Power Automate JSON.",true);}
  e.target.value="";
 });
+$("flow-analytics-demo").addEventListener("click",()=>{source=SolutionFlowAnalytics.demo();standalone=null;components=[];index=0;active=null;render();});
 $("flow-demo").addEventListener("click",()=>{source=[SolutionFlowExplorer.demo()];standalone=null;index=0;active=null;render();$("flow-explorer").scrollIntoView({behavior:"smooth"});});
 $("flow-export-svg").addEventListener("click",()=>{const f=chosen();if(f)save("power-automate-flow.svg",SolutionFlowExplorer.diagram(f),"image/svg+xml");});
 $("flow-export-mermaid").addEventListener("click",()=>{const f=chosen();if(f)save("power-automate-flow.mmd",SolutionFlowExplorer.mermaid(f),"text/plain");});

@@ -66,7 +66,8 @@ function inspect(value,defaultName="Exported flow",source="Workflow JSON"){
  if(!Object.keys(def.actions||{}).length)warnings.push("No action metadata is available.");
  return {name:short(props.displayName||props.displayname||value?.name||defaultName,180),
   source:short(source,210),steps,edges,connections,warnings,triggerCount:triggerIds.length,
-  actionCount:steps.length-triggerIds.length};
+  actionCount:steps.length-triggerIds.length,
+  analytics:root.SolutionFlowAnalytics?.analyze(def,props.connectionReferences||props.connectionreferences||{})};
 }
 function fromJSON(input,name="Flow.json"){
  if(typeof input==="string"&&input.length>6*1024*1024)throw Error("Flow JSON exceeds the 6 MB limit.");
