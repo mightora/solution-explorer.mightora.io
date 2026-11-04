@@ -13,7 +13,7 @@
   relationships:[['mt_project_tasks','mt_task','mt_project'],['mt_project_milestones','mt_milestone','mt_project']],flows:[['Project approved notification',3,'mt_sharedoffice365']]
  };
  const support={id:'service-desk',title:'Service desk · managed demo',sector:'IT services',version:'2.0.0.0',uniqueName:'mt_servicedesk',publisher:'mightora_demo',managed:true,
-  description:'Managed metadata example: tickets, teams, SLAs and triage automation. Demonstrates the recovery assessment.',
+  description:'Managed metadata example: tickets, teams, SLAs and triage automation. Illustrates partial metadata coverage.',
   entities:[['mt_ticket',[['mt_subject','nvarchar'],['mt_priority','picklist'],['mt_state','picklist'],['mt_assignedteam','lookup']]],['mt_team',[['mt_name','nvarchar'],['mt_lead','lookup']]],['mt_sla',[['mt_name','nvarchar'],['mt_deadlinehours','int']]]],
   relationships:[['mt_team_tickets','mt_ticket','mt_team'],['mt_sla_tickets','mt_ticket','mt_sla']],
   flows:[['Ticket escalation',4,'mt_sharedteams'],['Ticket acknowledgement',2,'mt_sharedoffice365']],
